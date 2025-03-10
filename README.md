@@ -4,8 +4,8 @@ A video game using TAGE. A 3D and multiplayer rendition of PacMan.
 I was thinking if win condition for TAGEMAN is to eat all the fruits (cherry, strawberry, orange, apple). While ghosts just try to prevent that
 
 
-### Roadmap
-###### Things to Do:
+## Roadmap
+### Things to Do:
 1. Make Maze
 2. Implement basic movement and camera control
 3. Implement basic networking
@@ -24,12 +24,12 @@ I was thinking if win condition for TAGEMAN is to eat all the fruits (cherry, st
 16. AI for NPC
 17. ------- MILESTONE 2 -------
 
-###### Additional features to implement:
+### Additional features to implement:
 1. Fireflower model and functionality
 2. Bowser Ghost model and functionality
 3. Viewport functionality
 
-### Brainstorming and overview of ideas
+## Brainstorming and overview of ideas
 Models (obj):
 1. TAGEMAN
 2. Ghosts
