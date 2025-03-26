@@ -25,8 +25,8 @@ public class CameraOrbitController {
         camera = cam;
         avatar = av;
         cameraAzimuth = 0.0f;
-        cameraElevation = 30.0f;
-        cameraRadius = 5.0f;
+        cameraElevation = 10.0f;
+        cameraRadius = 2.75f;
         setupInputs(gpName, kbName);
         updateCameraPosition();
     }
