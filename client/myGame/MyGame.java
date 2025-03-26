@@ -35,7 +35,7 @@ public class MyGame extends VariableFrameRateGame
 
 	private GameObject dol, avatar, terrain;
 	private ObjShape dolS, ghostS, terrainS;
-	private TextureImage doltx, ghostT, terrainT;
+	private TextureImage doltx, ghostT, terrainT, mazeTx;
 	private Light light1;
 
 	private String serverAddress;
@@ -76,7 +76,8 @@ public class MyGame extends VariableFrameRateGame
 	{	doltx = new TextureImage("Dolphin_HighPolyUV.png");
 		ghostT = new TextureImage("redDolphin.jpg");
 		//terrainT = new TextureImage("Originalpacmaze.jpg");
-		terrainT = new TextureImage("pacmanmaze.jpg");
+		mazeTx = new TextureImage("background.png");
+		terrainT = new TextureImage("rigidpacmanmaze.jpg");
 
 	}
 
@@ -86,13 +87,13 @@ public class MyGame extends VariableFrameRateGame
 
 		// build dolphin in the center of the window
 		dol = new GameObject(GameObject.root(), dolS, doltx);
-		initialTranslation = (new Matrix4f()).translation(0,0,0);
+		initialTranslation = (new Matrix4f()).translation(0,1,0);
 		initialScale = (new Matrix4f()).scaling(3.0f);
 		dol.setLocalTranslation(initialTranslation);
 		dol.setLocalScale(initialScale);
 		avatar = dol;
 
-		terrain = new GameObject(GameObject.root(), terrainS);
+		terrain = new GameObject(GameObject.root(), terrainS, mazeTx);
 		initialTranslation = (new Matrix4f()).translation(0, 0, 0);
 		terrain.setLocalTranslation(initialTranslation);
 		initialScale = (new Matrix4f()).scale(50.0f, 4.0f, 50.0f);
@@ -104,9 +105,10 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void initializeLights()
-	{	Light.setGlobalAmbient(0.5f, 0.5f, 0.5f);
+	{	Light.setGlobalAmbient(0.7f, 0.7f, 0.7f);
 		light1 = new Light();
-		light1.setLocation(new Vector3f(5.0f, 4.0f, 2.0f));
+		light1.setDiffuse(1.0f, 1.0f, 1.0f);
+		light1.setLocation(new Vector3f(0.0f, 1.0f, 0.0f));
 		(engine.getSceneGraph()).addLight(light1);
 	}
 
@@ -182,6 +184,9 @@ public class MyGame extends VariableFrameRateGame
 
 		im.update((float) elapsedTime);
 		processNetworking((float) elapsedTime);
+
+		Vector3f dolLoc = dol.getWorldLocation();
+		light1.setLocation(dolLoc);
 
 		
 	}
