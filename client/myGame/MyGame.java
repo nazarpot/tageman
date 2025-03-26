@@ -36,6 +36,7 @@ public class MyGame extends VariableFrameRateGame
 	private GameObject dol, avatar, terrain;
 	private ObjShape dolS, ghostS, terrainS;
 	private TextureImage doltx, ghostT, terrainT;
+	private int tronSky;
 	private Light light1;
 
 	private String serverAddress;
@@ -78,6 +79,13 @@ public class MyGame extends VariableFrameRateGame
 		//terrainT = new TextureImage("Originalpacmaze.jpg");
 		terrainT = new TextureImage("pacmanmaze.jpg");
 
+	}
+
+	@Override
+	public void loadSkyBoxes()
+	{ 	tronSky = (engine.getSceneGraph()).loadCubeMap("tronSky");
+		(engine.getSceneGraph()).setActiveSkyBoxTexture(tronSky);
+		(engine.getSceneGraph()).setSkyBoxEnabled(true);
 	}
 
 	@Override
@@ -162,7 +170,7 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void update()
-	{	
+	{
 		lastFrameTime = currFrameTime;
 		currFrameTime = System.currentTimeMillis();
 		elapsedTime += (currFrameTime - lastFrameTime) / 1000.0;
