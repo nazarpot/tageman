@@ -33,9 +33,9 @@ public class MyGame extends VariableFrameRateGame
 	private int counter=0;
 	private double lastFrameTime, currFrameTime, elapsedTime;
 
-	private GameObject dol, avatar;
-	private ObjShape dolS, ghostS;
-	private TextureImage doltx, ghostT;
+	private GameObject dol, avatar, terrain;
+	private ObjShape dolS, ghostS, terrainS;
+	private TextureImage doltx, ghostT, terrainT;
 	private Light light1;
 
 	private String serverAddress;
@@ -66,13 +66,18 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void loadShapes()
 	{	dolS = new ImportedModel("dolphinHighPoly.obj");
-		ghostS = new ImportedModel("dolphinHighPoly.obj");
+		//ghostS = new ImportedModel("dolphinHighPoly.obj");
+		ghostS = new Sphere();
+		terrainS = new TerrainPlane(1000);
 	}
 
 	@Override
 	public void loadTextures()
 	{	doltx = new TextureImage("Dolphin_HighPolyUV.png");
 		ghostT = new TextureImage("redDolphin.jpg");
+		//terrainT = new TextureImage("Originalpacmaze.jpg");
+		terrainT = new TextureImage("pacmanmaze.jpg");
+
 	}
 
 	@Override
@@ -86,6 +91,15 @@ public class MyGame extends VariableFrameRateGame
 		dol.setLocalTranslation(initialTranslation);
 		dol.setLocalScale(initialScale);
 		avatar = dol;
+
+		terrain = new GameObject(GameObject.root(), terrainS);
+		initialTranslation = (new Matrix4f()).translation(0, 0, 0);
+		terrain.setLocalTranslation(initialTranslation);
+		initialScale = (new Matrix4f()).scale(50.0f, 4.0f, 50.0f);
+		terrain.setLocalScale(initialScale);
+		terrain.setHeightMap(terrainT);
+		terrain.getRenderStates().setTiling(1);
+		terrain.getRenderStates().setTileFactor(10);
 	}
 
 	@Override
