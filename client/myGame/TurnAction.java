@@ -8,7 +8,7 @@ import org.joml.*;
 public class TurnAction extends AbstractInputAction {
     private MyGame game;
     private GameObject avatar;
-    private Matrix4f oldRotation, newRotation, rotAroundAvatarUp; 
+    private Matrix4f oldRotation, newRotation, rotAroundAvatarUp;
     private Vector4f oldUp;
     private int direction;
     private boolean isAxisController;
