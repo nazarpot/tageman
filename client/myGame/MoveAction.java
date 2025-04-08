@@ -10,13 +10,15 @@ import static java.lang.Math.*;
 public class MoveAction extends AbstractInputAction
 {
     private MyGame game;
+    private ProtocolClient protClient;
     private GameObject avatar;
     private Vector3f oldPosition, newPosition;
     private Vector4f moveDirection;
     private char direction;
 
-    public MoveAction(MyGame g, char direction) {
+    public MoveAction(MyGame g, ProtocolClient p, char direction) {
         game = g;
+        protClient = p;
         this.direction = direction;
         //F for forward
         //B for backward
@@ -39,8 +41,9 @@ public class MoveAction extends AbstractInputAction
                 break;
         }
         moveDirection.mul(avatar.getWorldRotation());
-        moveDirection.mul(0.05f);
+        moveDirection.mul(0.1f);
         newPosition = oldPosition.add(moveDirection.x(), moveDirection.y(), moveDirection.z());
         avatar.setLocalLocation(newPosition);
+        protClient.sendMoveMessage(avatar.getWorldLocation(), 0);
     }
 }

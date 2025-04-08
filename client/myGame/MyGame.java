@@ -30,13 +30,19 @@ public class MyGame extends VariableFrameRateGame
 	private GhostManager gm;
 	private CameraOrbitController orbitController;
 
+	private boolean joined = false;
 	private int counter=0;
 	private double lastFrameTime, currFrameTime, elapsedTime;
 
-	private GameObject tageman, dol2, avatar, terrain;
-	private ObjShape tageS, ghostS, terrainS;
-	private TextureImage tageTX, ghostT, terrainT, mazeTx;
 	private int tronSky;
+	private Vector<GameObject> avatarSelection = new Vector<GameObject>(5);
+	private int selection = 0;
+
+	private GameObject avatar, terrain;
+	private GameObject tageman, dol, blinky, pinky, inky, clyde;
+	private ObjShape dolS, ghostS, pacmanGhostS, terrainS, tageS;
+	private TextureImage tageTX, ghostT, terrainT, mazeTx;
+	private TextureImage blinkyT, pinkyT, inkyT, clydeT, scaredGhostT;
 	private Light light1;
 
 	private String serverAddress;
@@ -67,26 +73,25 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void loadShapes()
 	{	tageS = new ImportedModel("tageman.obj");
-		//ghostS = new ImportedModel("dolphinHighPoly.obj");
-		ghostS = new Sphere();
 		terrainS = new TerrainPlane(1000);
+		//ghostS = new ImportedModel("dolphinHighPoly.obj");
+		pacmanGhostS = new ImportedModel("ghost.obj");
+
 	}
 
 	@Override
 	public void loadTextures()
 	{	tageTX = new TextureImage("tageman.png");
-		ghostT = new TextureImage("redDolphin.jpg");
-		//terrainT = new TextureImage("Originalpacmaze.jpg");
+		//ghostT = new TextureImage("redDolphin.jpg");
 		mazeTx = new TextureImage("background.png");
 		terrainT = new TextureImage("rigidpacmanmaze.jpg");
 
-	}
+		blinkyT = new TextureImage("blinky.png");
+		pinkyT = new TextureImage("pinky.png");
+		inkyT = new TextureImage("inky.png");
+		clydeT = new TextureImage("clyde.png");
+		scaredGhostT = new TextureImage("scared.png");
 
-	@Override
-	public void loadSkyBoxes()
-	{ 	tronSky = (engine.getSceneGraph()).loadCubeMap("tronSky");
-		(engine.getSceneGraph()).setActiveSkyBoxTexture(tronSky);
-		(engine.getSceneGraph()).setSkyBoxEnabled(true);
 	}
 
 	@Override
@@ -100,13 +105,31 @@ public class MyGame extends VariableFrameRateGame
 		tageman.setLocalTranslation(initialTranslation);
 		tageman.setLocalScale(initialScale);
 		avatar = tageman;
+		avatarSelection.add(tageman);
 
-		// build dolphin in the center of the window
-		dol2 = new GameObject(GameObject.root(), tageS, tageTX);
-		initialTranslation = (new Matrix4f()).translation(0,1,0);
-		initialScale = (new Matrix4f()).scaling(1f);
-		dol2.setLocalTranslation(initialTranslation);
-		dol2.setLocalScale(initialScale);
+		blinky = new GameObject(GameObject.root(), pacmanGhostS, blinkyT);
+		initialScale = (new Matrix4f()).scaling(0.5f);
+		blinky.setLocalScale(initialScale);
+		blinky.getRenderStates().disableRendering();
+		avatarSelection.add(blinky);
+
+		pinky = new GameObject(GameObject.root(), pacmanGhostS, pinkyT);
+		initialScale = (new Matrix4f()).scaling(0.5f);
+		pinky.setLocalScale(initialScale);
+		pinky.getRenderStates().disableRendering();
+		avatarSelection.add(pinky);
+
+		inky = new GameObject(GameObject.root(), pacmanGhostS, inkyT);
+		initialScale = (new Matrix4f()).scaling(0.5f);
+		inky.setLocalScale(initialScale);
+		inky.getRenderStates().disableRendering();
+		avatarSelection.add(inky);
+
+		clyde = new GameObject(GameObject.root(), pacmanGhostS, clydeT);
+		initialScale = (new Matrix4f()).scaling(0.5f);
+		clyde.setLocalScale(initialScale);
+		clyde.getRenderStates().disableRendering();
+		avatarSelection.add(clyde);
 
 		terrain = new GameObject(GameObject.root(), terrainS, mazeTx);
 		initialTranslation = (new Matrix4f()).translation(0, 0, 0);
@@ -134,6 +157,8 @@ public class MyGame extends VariableFrameRateGame
 		elapsedTime = 0.0;
 		(engine.getRenderSystem()).setWindowDimensions(1900,1000);
 
+		//setupNetworking();
+
 		// ------------- positioning the camera -------------
 		(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0,0,5));
 		im = engine.getInputManager();
@@ -144,12 +169,12 @@ public class MyGame extends VariableFrameRateGame
 		orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
 
 		//------------- INPUTS SECTION--------------------------
-		MoveAction fwdAction = new MoveAction(this, 'F');
-		MoveAction bkwdAction = new MoveAction(this, 'B');
+		MoveAction fwdAction = new MoveAction(this, protClient, 'F');
+		MoveAction bkwdAction = new MoveAction(this, protClient, 'B');
 
-		TurnAction turnAction = new TurnAction(this);
-		TurnAction turnLeftAction = new TurnAction(this, 1);
-		TurnAction turnRightAction = new TurnAction(this, -1);
+		TurnAction turnAction = new TurnAction(this, protClient);
+		TurnAction turnLeftAction = new TurnAction(this, protClient, 1);
+		TurnAction turnRightAction = new TurnAction(this, protClient, -1);
 
 		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._1, 
 											fwdAction, 
@@ -172,14 +197,17 @@ public class MyGame extends VariableFrameRateGame
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.D, 
 											turnRightAction, 
 											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-		
-		setupNetworking();
+	
 
 	}
 
 	@Override
 	public void update()
-	{
+	{	
+		if (!joined) {
+			avatar.setLocalTranslation((new Matrix4f()).translation(0, -15, 0));
+		}
+
 		lastFrameTime = currFrameTime;
 		currFrameTime = System.currentTimeMillis();
 		elapsedTime += (currFrameTime - lastFrameTime) / 1000.0;
@@ -200,8 +228,8 @@ public class MyGame extends VariableFrameRateGame
 		im.update((float) elapsedTime);
 		processNetworking((float) elapsedTime);
 
-		Vector3f dolLoc = tageman.getWorldLocation();
-		light1.setLocation(dolLoc);
+		Vector3f avatarLoc = avatar.getWorldLocation();
+		light1.setLocation(avatarLoc);
 
 		
 	}
@@ -209,20 +237,80 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void keyPressed(KeyEvent e)
 	{	switch (e.getKeyCode())
-		{	case KeyEvent.VK_C:
-				counter++;
+		{
+			case KeyEvent.VK_PERIOD:
+				if (!joined) {
+					selection += 1;
+					selection %= 5;
+					avatar.getRenderStates().disableRendering();
+					avatar = avatarSelection.elementAt(selection);
+					avatar.getRenderStates().enableRendering();
+				}
 				break;
-			case KeyEvent.VK_2:
-				tageman.getRenderStates().setWireframe(true);
+			case KeyEvent.VK_COMMA:
+				if (!joined) {
+					if (selection == 0) {
+						selection = 4;
+					} else {
+						selection -= 1;
+					}
+					avatar.getRenderStates().disableRendering();
+					avatar = avatarSelection.elementAt(selection);
+					avatar.getRenderStates().enableRendering();
+				}
 				break;
-			case KeyEvent.VK_3:
-				tageman.getRenderStates().setWireframe(false);
-				break;
-			case KeyEvent.VK_4:
-				(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0,0,0));
+			case KeyEvent.VK_ENTER:
+				joined = true;
+				avatar.setLocalTranslation((new Matrix4f()).translation(0, 1, 0));
+
+				im = engine.getInputManager();
+				String gpName = im.getFirstGamepadName();
+				String keyboardName = im.getKeyboardName();
+		
+				Camera c = (engine.getRenderSystem().getViewport("MAIN").getCamera());
+				orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
+
+				ghostS = avatar.getShape();
+				ghostT = avatar.getTextureImage();
+
+				joinGame();
 				break;
 		}
 		super.keyPressed(e);
+	}
+
+	private void joinGame() {
+		setupNetworking();
+
+		//------------- INPUTS SECTION--------------------------
+		MoveAction fwdAction = new MoveAction(this, protClient, 'F');
+		MoveAction bkwdAction = new MoveAction(this, protClient, 'B');
+
+		TurnAction turnAction = new TurnAction(this, protClient);
+		TurnAction turnLeftAction = new TurnAction(this, protClient, 1);
+		TurnAction turnRightAction = new TurnAction(this, protClient, -1);
+
+		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._1, 
+											fwdAction, 
+											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.W, 
+											fwdAction, 
+											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._3, 
+											bkwdAction, 
+											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.S, 
+											bkwdAction, 
+											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.A, 
+											turnLeftAction, 
+											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.X, 
+											turnAction, 
+											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.D, 
+											turnRightAction, 
+											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 	}
 
 	// ---------- NETWORKING SECTION ----------------
