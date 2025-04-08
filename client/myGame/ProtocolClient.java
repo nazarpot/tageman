@@ -91,7 +91,7 @@ public class ProtocolClient extends GameConnectionClient
 			}
 			
 			// Handle MOVE message
-			// Format: (move,remoteId,x,y,z)
+			// Format: (move,remoteId,x,y,z,r)
 			if (messageTokens[0].compareTo("move") == 0)
 			{
 				// move a ghost avatar
@@ -102,10 +102,15 @@ public class ProtocolClient extends GameConnectionClient
 				Vector3f ghostPosition = new Vector3f(
 					Float.parseFloat(messageTokens[2]),
 					Float.parseFloat(messageTokens[3]),
-					Float.parseFloat(messageTokens[4]));
+					Float.parseFloat(messageTokens[4])
+				);
+
+				Float ghostRotation = Float.parseFloat(messageTokens[5]);
 				
-				ghostManager.updateGhostAvatar(ghostID, ghostPosition);
-	}	}	}
+				ghostManager.updateGhostAvatar(ghostID, ghostPosition, ghostRotation);
+			}
+		}	
+	}
 	
 	// The initial message from the game client requesting to join the 
 	// server. localId is a unique identifier for the client. Recommend 
@@ -129,7 +134,7 @@ public class ProtocolClient extends GameConnectionClient
 		{	e.printStackTrace();
 	}	}
 	
-	// Informs the server of the clients Avatars position. The server 
+	// Informs the server of the client�s Avatar�s position. The server 
 	// takes this message and forwards it to all other clients registered 
 	// with the server.
 	// Message Format: (create,localId,x,y,z) where x, y, and z represent the position
@@ -167,15 +172,18 @@ public class ProtocolClient extends GameConnectionClient
 	// Informs the server that the local avatar has changed position.  
 	// Message Format: (move,localId,x,y,z) where x, y, and z represent the position.
 
-	public void sendMoveMessage(Vector3f position)
+	public void sendMoveMessage(Vector3f position, float rotateBy)
 	{	try 
 		{	String message = new String("move," + id.toString());
 			message += "," + position.x();
 			message += "," + position.y();
 			message += "," + position.z();
+			message += "," + rotateBy;
 			
 			sendPacket(message);
 		} catch (IOException e) 
-		{	e.printStackTrace();
-	}	}
+		{	
+			e.printStackTrace();
+		}	
+	}
 }

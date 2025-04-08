@@ -65,7 +65,8 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 			if(messageTokens[0].compareTo("move") == 0)
 			{	UUID clientID = UUID.fromString(messageTokens[1]);
 				String[] pos = {messageTokens[2], messageTokens[3], messageTokens[4]};
-				sendMoveMessages(clientID, pos);
+				String rotate = messageTokens[5];
+				sendMoveMessages(clientID, pos, rotate);
 	}	}	}
 
 	// Informs the client who just requested to join the server if their if their 
@@ -119,9 +120,9 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 		{	e.printStackTrace();
 	}	}
 	
-	// Informs a client of the details for a remote clients avatar. This message is in response 
-	// to the server receiving a DETAILS_FOR message from a remote client. That remote clients 
-	// messages localId becomes the remoteId for this message, and the remote clients messages 
+	// Informs a client of the details for a remote client�s avatar. This message is in response 
+	// to the server receiving a DETAILS_FOR message from a remote client. That remote client�s 
+	// message�s localId becomes the remoteId for this message, and the remote client�s message�s 
 	// remoteId is used to send this message to the proper client. 
 	// Message Format: (dsfr,remoteId,x,y,z) where x, y, and z represent the position.
 
@@ -137,7 +138,7 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 		{	e.printStackTrace();
 	}	}
 	
-	// Informs a local client that a remote client wants the local clients avatars information. 
+	// Informs a local client that a remote client wants the local client�s avatar�s information. 
 	// This message is meant to be sent to all clients connected to the server when a new client 
 	// joins the server. 
 	// Message Format: (wsds,remoteId)
@@ -151,17 +152,18 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 		{	e.printStackTrace();
 	}	}
 	
-	// Informs a client that a remote clients avatar has changed position. x, y, and z represent 
+	// Informs a client that a remote client�s avatar has changed position. x, y, and z represent 
 	// the new position of the remote avatar. This message is meant to be forwarded to all clients
 	// connected to the server when it receives a MOVE message from the remote client.   
 	// Message Format: (move,remoteId,x,y,z) where x, y, and z represent the position.
 
-	public void sendMoveMessages(UUID clientID, String[] position)
+	public void sendMoveMessages(UUID clientID, String[] position, String rotateBy)
 	{	try 
 		{	String message = new String("move," + clientID.toString());
 			message += "," + position[0];
 			message += "," + position[1];
 			message += "," + position[2];
+			message += "," + rotateBy;
 			forwardPacketToAll(message, clientID);
 		} 
 		catch (IOException e) 

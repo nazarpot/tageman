@@ -7,19 +7,22 @@ import org.joml.*;
 
 public class TurnAction extends AbstractInputAction {
     private MyGame game;
+    private ProtocolClient protClient;
     private GameObject avatar;
-    private Matrix4f oldRotation, newRotation, rotAroundAvatarUp;
+    private Matrix4f oldRotation, newRotation, rotAroundAvatarUp; 
     private Vector4f oldUp;
     private int direction;
     private boolean isAxisController;
 
-    public TurnAction(MyGame g) {
+    public TurnAction(MyGame g, ProtocolClient p) {
         game = g;
+        protClient = p;
         isAxisController = true;
     }
 
-    public TurnAction(MyGame g, int direction) {
+    public TurnAction(MyGame g, ProtocolClient p, int direction) {
         game = g;
+        protClient = p;
         this.direction = direction;
         isAxisController = false;
     }
@@ -35,8 +38,8 @@ public class TurnAction extends AbstractInputAction {
         
             avatar.yaw(keyValue);
         } else {
-            avatar.yaw(1.0f * direction);
+            avatar.yaw(3.0f * direction);
         }
-        
+        protClient.sendMoveMessage(avatar.getWorldLocation(), direction);
     }
 }
