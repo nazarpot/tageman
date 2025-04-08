@@ -33,9 +33,9 @@ public class MyGame extends VariableFrameRateGame
 	private int counter=0;
 	private double lastFrameTime, currFrameTime, elapsedTime;
 
-	private GameObject dol, avatar, terrain;
-	private ObjShape dolS, ghostS, terrainS;
-	private TextureImage doltx, ghostT, terrainT, mazeTx;
+	private GameObject tageman, dol2, avatar, terrain;
+	private ObjShape tageS, ghostS, terrainS;
+	private TextureImage tageTX, ghostT, terrainT, mazeTx;
 	private int tronSky;
 	private Light light1;
 
@@ -66,7 +66,7 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void loadShapes()
-	{	dolS = new ImportedModel("dolphinHighPoly.obj");
+	{	tageS = new ImportedModel("tageman.obj");
 		//ghostS = new ImportedModel("dolphinHighPoly.obj");
 		ghostS = new Sphere();
 		terrainS = new TerrainPlane(1000);
@@ -74,7 +74,7 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void loadTextures()
-	{	doltx = new TextureImage("Dolphin_HighPolyUV.png");
+	{	tageTX = new TextureImage("tageman.png");
 		ghostT = new TextureImage("redDolphin.jpg");
 		//terrainT = new TextureImage("Originalpacmaze.jpg");
 		mazeTx = new TextureImage("background.png");
@@ -94,12 +94,19 @@ public class MyGame extends VariableFrameRateGame
 	{	Matrix4f initialTranslation, initialScale;
 
 		// build dolphin in the center of the window
-		dol = new GameObject(GameObject.root(), dolS, doltx);
+		tageman = new GameObject(GameObject.root(), tageS, tageTX);
 		initialTranslation = (new Matrix4f()).translation(0,1,0);
-		initialScale = (new Matrix4f()).scaling(3.0f);
-		dol.setLocalTranslation(initialTranslation);
-		dol.setLocalScale(initialScale);
-		avatar = dol;
+		initialScale = (new Matrix4f()).scaling(.1f);
+		tageman.setLocalTranslation(initialTranslation);
+		tageman.setLocalScale(initialScale);
+		avatar = tageman;
+
+		// build dolphin in the center of the window
+		dol2 = new GameObject(GameObject.root(), tageS, tageTX);
+		initialTranslation = (new Matrix4f()).translation(0,1,0);
+		initialScale = (new Matrix4f()).scaling(1f);
+		dol2.setLocalTranslation(initialTranslation);
+		dol2.setLocalScale(initialScale);
 
 		terrain = new GameObject(GameObject.root(), terrainS, mazeTx);
 		initialTranslation = (new Matrix4f()).translation(0, 0, 0);
@@ -193,7 +200,7 @@ public class MyGame extends VariableFrameRateGame
 		im.update((float) elapsedTime);
 		processNetworking((float) elapsedTime);
 
-		Vector3f dolLoc = dol.getWorldLocation();
+		Vector3f dolLoc = tageman.getWorldLocation();
 		light1.setLocation(dolLoc);
 
 		
@@ -206,10 +213,10 @@ public class MyGame extends VariableFrameRateGame
 				counter++;
 				break;
 			case KeyEvent.VK_2:
-				dol.getRenderStates().setWireframe(true);
+				tageman.getRenderStates().setWireframe(true);
 				break;
 			case KeyEvent.VK_3:
-				dol.getRenderStates().setWireframe(false);
+				tageman.getRenderStates().setWireframe(false);
 				break;
 			case KeyEvent.VK_4:
 				(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0,0,0));
