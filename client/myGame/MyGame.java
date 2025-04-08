@@ -84,7 +84,7 @@ public class MyGame extends VariableFrameRateGame
 	{	tageTX = new TextureImage("tageman.png");
 		//ghostT = new TextureImage("redDolphin.jpg");
 		mazeTx = new TextureImage("background.png");
-		terrainT = new TextureImage("rigidpacmanmaze.jpg");
+		terrainT = new TextureImage("rigidpacmanmaze2.jpg");
 
 		blinkyT = new TextureImage("blinky.png");
 		pinkyT = new TextureImage("pinky.png");
@@ -100,9 +100,9 @@ public class MyGame extends VariableFrameRateGame
 
 		// build dolphin in the center of the window
 		tageman = new GameObject(GameObject.root(), tageS, tageTX);
-		initialTranslation = (new Matrix4f()).translation(0,1,0);
-		initialScale = (new Matrix4f()).scaling(.1f);
-		tageman.setLocalTranslation(initialTranslation);
+		//initialTranslation = (new Matrix4f()).translation(0,1,0);
+		initialScale = (new Matrix4f()).scaling(.5f);
+		//tageman.setLocalTranslation(initialTranslation);
 		tageman.setLocalScale(initialScale);
 		avatar = tageman;
 		avatarSelection.add(tageman);
@@ -231,7 +231,10 @@ public class MyGame extends VariableFrameRateGame
 		Vector3f avatarLoc = avatar.getWorldLocation();
 		light1.setLocation(avatarLoc);
 
-		
+		float height = terrain.getHeight(avatarLoc.x(), avatarLoc.z());
+		if (joined) {
+			avatar.setLocalLocation(new Vector3f(avatarLoc.x(), height+1, avatarLoc.z()));
+		}
 	}
 
 	@Override
