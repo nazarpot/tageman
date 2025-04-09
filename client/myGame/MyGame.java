@@ -34,13 +34,14 @@ public class MyGame extends VariableFrameRateGame
 	private int counter=0;
 	private double lastFrameTime, currFrameTime, elapsedTime;
 
+	private int tronSky;
 	private Vector<GameObject> avatarSelection = new Vector<GameObject>(5);
 	private int selection = 0;
 
 	private GameObject avatar, terrain;
-	private GameObject dol, blinky, pinky, inky, clyde;
-	private ObjShape dolS, ghostS, pacmanGhostS, terrainS;
-	private TextureImage doltx, ghostT, terrainT, mazeTx;
+	private GameObject tageman, dol, blinky, pinky, inky, clyde;
+	private ObjShape dolS, ghostS, pacmanGhostS, terrainS, tageS;
+	private TextureImage tageTX, ghostT, terrainT, mazeTx;
 	private TextureImage blinkyT, pinkyT, inkyT, clydeT, scaredGhostT;
 	private Light light1;
 
@@ -71,19 +72,19 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void loadShapes()
-	{	dolS = new ImportedModel("dolphinHighPoly.obj");
+	{	tageS = new ImportedModel("tageman.obj");
 		terrainS = new TerrainPlane(1000);
-		ghostS = new ImportedModel("dolphinHighPoly.obj");
+		//ghostS = new ImportedModel("dolphinHighPoly.obj");
 		pacmanGhostS = new ImportedModel("ghost.obj");
 
 	}
 
 	@Override
 	public void loadTextures()
-	{	doltx = new TextureImage("Dolphin_HighPolyUV.png");
-		ghostT = new TextureImage("Dolphin_HighPolyUV.png");
+	{	tageTX = new TextureImage("tageman.png");
+		//ghostT = new TextureImage("redDolphin.jpg");
 		mazeTx = new TextureImage("background.png");
-		terrainT = new TextureImage("rigidpacmanmaze.jpg");
+		terrainT = new TextureImage("rigidpacmanmaze2.jpg");
 
 		blinkyT = new TextureImage("blinky.png");
 		pinkyT = new TextureImage("pinky.png");
@@ -97,15 +98,14 @@ public class MyGame extends VariableFrameRateGame
 	public void buildObjects()
 	{	Matrix4f initialTranslation, initialScale;
 
-		// avatar selection
-		// TODO: replace dolphin with tageman
-		dol = new GameObject(GameObject.root(), dolS, doltx);
-		initialTranslation = (new Matrix4f()).translation(0,1,0);
-		initialScale = (new Matrix4f()).scaling(3.0f);
-		dol.setLocalTranslation(initialTranslation);
-		dol.setLocalScale(initialScale);
-		avatar = dol;
-		avatarSelection.add(dol);
+		// build dolphin in the center of the window
+		tageman = new GameObject(GameObject.root(), tageS, tageTX);
+		//initialTranslation = (new Matrix4f()).translation(0,1,0);
+		initialScale = (new Matrix4f()).scaling(.5f);
+		//tageman.setLocalTranslation(initialTranslation);
+		tageman.setLocalScale(initialScale);
+		avatar = tageman;
+		avatarSelection.add(tageman);
 
 		blinky = new GameObject(GameObject.root(), pacmanGhostS, blinkyT);
 		initialScale = (new Matrix4f()).scaling(0.5f);
@@ -231,7 +231,10 @@ public class MyGame extends VariableFrameRateGame
 		Vector3f avatarLoc = avatar.getWorldLocation();
 		light1.setLocation(avatarLoc);
 
-		
+		float height = terrain.getHeight(avatarLoc.x(), avatarLoc.z());
+		if (joined) {
+			avatar.setLocalLocation(new Vector3f(avatarLoc.x(), height+1, avatarLoc.z()));
+		}
 	}
 
 	@Override
