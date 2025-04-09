@@ -13,11 +13,12 @@ import javax.swing.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.UUID;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import org.joml.*;
+
+import com.jogamp.newt.event.KeyEvent;
 
 import net.java.games.input.*;
 import net.java.games.input.Component.Identifier.*;
@@ -91,7 +92,6 @@ public class MyGame extends VariableFrameRateGame
 		inkyT = new TextureImage("inky.png");
 		clydeT = new TextureImage("clyde.png");
 		scaredGhostT = new TextureImage("scared.png");
-
 	}
 
 	@Override
@@ -148,6 +148,13 @@ public class MyGame extends VariableFrameRateGame
 		light1.setDiffuse(1.0f, 1.0f, 1.0f);
 		light1.setLocation(new Vector3f(0.0f, 1.0f, 0.0f));
 		(engine.getSceneGraph()).addLight(light1);
+	}
+
+	@Override
+	public void loadSkyBoxes()
+	{ 	tronSky = (engine.getSceneGraph()).loadCubeMap("tronSky");
+		(engine.getSceneGraph()).setActiveSkyBoxTexture(tronSky);
+		(engine.getSceneGraph()).setSkyBoxEnabled(true);
 	}
 
 	@Override
