@@ -9,6 +9,7 @@ import java.util.Vector;
 import org.joml.*;
 
 import tage.*;
+import tage.shapes.*;
 import tage.networking.client.GameConnectionClient;
 
 public class ProtocolClient extends GameConnectionClient
@@ -39,9 +40,11 @@ public class ProtocolClient extends GameConnectionClient
 			// Format: (join,success) or (join,failure)
 			if(messageTokens[0].compareTo("join") == 0)
 			{	if(messageTokens[1].compareTo("success") == 0)
-				{	System.out.println("join success confirmed");
+				{	
+					System.out.println("join success confirmed");
 					game.setIsConnected(true);
-					sendCreateMessage(game.getPlayerPosition());
+					String character = messageTokens[2];
+					sendCreateMessage(game.getPlayerPosition(), character);
 				}
 				if(messageTokens[1].compareTo("failure") == 0)
 				{	System.out.println("join failure confirmed");
@@ -73,8 +76,10 @@ public class ProtocolClient extends GameConnectionClient
 					Float.parseFloat(messageTokens[3]),
 					Float.parseFloat(messageTokens[4]));
 
+				String character = messageTokens[5];
+
 				try
-				{	ghostManager.createGhostAvatar(ghostID, ghostPosition);
+				{	ghostManager.createGhostAvatar(ghostID, character, ghostPosition);
 				}	catch (IOException e)
 				{	System.out.println("error creating ghost avatar");
 				}
@@ -87,7 +92,7 @@ public class ProtocolClient extends GameConnectionClient
 				// Send the local client's avatar's information
 				// Parse out the id into a UUID
 				UUID ghostID = UUID.fromString(messageTokens[1]);
-				sendDetailsForMessage(ghostID, game.getPlayerPosition());
+				sendDetailsForMessage(ghostID, game.getPlayerPosition(), game.getCharacterName());
 			}
 			
 			// Handle MOVE message
@@ -117,9 +122,10 @@ public class ProtocolClient extends GameConnectionClient
 	// a random UUID.
 	// Message Format: (join,localId)
 	
-	public void sendJoinMessage()
+	public void sendJoinMessage(String character)
 	{	try 
-		{	sendPacket(new String("join," + id.toString()));
+		{	sendPacket(new String("join," + id.toString() + "," + character));
+			System.out.println("client joined server");
 		} catch (IOException e) 
 		{	e.printStackTrace();
 	}	}
@@ -134,19 +140,22 @@ public class ProtocolClient extends GameConnectionClient
 		{	e.printStackTrace();
 	}	}
 	
-	// Informs the server of the client�s Avatar�s position. The server 
+	// Informs the server of the clients Avatars position. The server 
 	// takes this message and forwards it to all other clients registered 
 	// with the server.
 	// Message Format: (create,localId,x,y,z) where x, y, and z represent the position
 
-	public void sendCreateMessage(Vector3f position)
+	public void sendCreateMessage(Vector3f position, String character)
 	{	try 
 		{	String message = new String("create," + id.toString());
 			message += "," + position.x();
 			message += "," + position.y();
 			message += "," + position.z();
+			message += "," + character;
 			
 			sendPacket(message);
+
+			System.out.println(character + " character created");
 		} catch (IOException e) 
 		{	e.printStackTrace();
 	}	}
@@ -157,14 +166,17 @@ public class ProtocolClient extends GameConnectionClient
 	// from the server.
 	// Message Format: (dsfr,remoteId,localId,x,y,z) where x, y, and z represent the position.
 
-	public void sendDetailsForMessage(UUID remoteId, Vector3f position)
+	public void sendDetailsForMessage(UUID remoteId, Vector3f position, String character)
 	{	try 
 		{	String message = new String("dsfr," + remoteId.toString() + "," + id.toString());
 			message += "," + position.x();
 			message += "," + position.y();
 			message += "," + position.z();
+			message += "," + character;
 			
 			sendPacket(message);
+
+			System.out.println(character + " gave details");
 		} catch (IOException e) 
 		{	e.printStackTrace();
 	}	}
@@ -181,9 +193,12 @@ public class ProtocolClient extends GameConnectionClient
 			message += "," + rotateBy;
 			
 			sendPacket(message);
+
+			System.out.println("character moved");
 		} catch (IOException e) 
 		{	
 			e.printStackTrace();
 		}	
 	}
+
 }
