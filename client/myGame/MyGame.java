@@ -109,7 +109,7 @@ public class MyGame extends VariableFrameRateGame
 	{	Matrix4f initialTranslation, initialScale;
 
 		// build dolphin in the center of the window
-		tageman = new GameObject(GameObject.root(), tagemanS, tagemanT);
+		tageman = new GameObject(GameObject.root(), tageS, tageTX);
 		//initialTranslation = (new Matrix4f()).translation(0,1,0);
 		initialScale = (new Matrix4f()).scaling(.5f);
 		//tageman.setLocalTranslation(initialTranslation);
@@ -486,7 +486,7 @@ public class MyGame extends VariableFrameRateGame
 	public GameObject getAvatar() {return avatar;}
 	public ObjShape getGhostShape(String name) {
 		if (name.equals("tageman")) {
-			return tagemanS;
+			return tageS;
 		} else if (name.equals("blinky") || name.equals("pinky") || name.equals("inky") || name.equals("clyde")) {
 			return pacmanGhostS;
 		} else {
@@ -495,7 +495,7 @@ public class MyGame extends VariableFrameRateGame
 	}
 	public TextureImage getGhostTexture(String name) {
 		if (name.equals("tageman")) {
-			return tagemanT;
+			return tageTX;
 		} else if (name.equals("blinky")) {
 			return blinkyT;
 		} else if (name.equals("pinky")) {
