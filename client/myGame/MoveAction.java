@@ -5,7 +5,7 @@ import tage.*;
 import tage.input.action.AbstractInputAction;
 import net.java.games.input.Event;
 import org.joml.*;
-import static java.lang.Math.*;
+//import static java.lang.Math.*;
 
 public class MoveAction extends AbstractInputAction
 {
@@ -25,25 +25,29 @@ public class MoveAction extends AbstractInputAction
     }
 
     @Override
-    public void performAction(float time, Event e)
-    {
-        Vector3f forwardVec, dolLocation;
-        avatar = game.getAvatar();
-            
-        oldPosition = avatar.getWorldLocation();
+    public void performAction(float time, Event e) {
 
-        switch(direction) {
+        float keyVal = e.getValue();
+        System.out.println("W Key state: " + keyVal);
+        switch (direction) {
             case 'F':
-                moveDirection = new Vector4f(0f, 0f, 1f, 1f);
+                if (keyVal == 1.0f) {
+                    game.setMovingForward(true);
+                    game.setTagemanChomp(true);
+                } else {
+                    game.setMovingForward(false);
+                    game.setTagemanChomp(false);
+                }
                 break;
             case 'B':
-                moveDirection = new Vector4f(0f, 0f, -1f, 1f);
+                if (keyVal == 1.0f) {
+                    game.setMovingBackward(true);
+                    //game.setTagemanChomp(true);
+                } else {
+                    game.setMovingBackward(false);
+                    //game.setTagemanChomp(false);
+                }
                 break;
         }
-        moveDirection.mul(avatar.getWorldRotation());
-        moveDirection.mul(0.1f);
-        newPosition = oldPosition.add(moveDirection.x(), moveDirection.y(), moveDirection.z());
-        avatar.setLocalLocation(newPosition);
-        protClient.sendMoveMessage(avatar.getWorldLocation(), 0);
     }
 }
