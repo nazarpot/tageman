@@ -38,7 +38,9 @@ public class MyGame extends VariableFrameRateGame
 	private double lastFrameTime, currFrameTime, elapsedTime;
 
 	private int tronSky;
-	private Vector<GameObject> avatarSelection = new Vector<GameObject>(5);
+	private Vector<GameObject> avatarSelection = new Vector<GameObject>();
+	private String[] characterNames = {"tageman", "blinky", "pinky", "inky", "clyde"};
+	private String characterName;
 	private int selection = 0;
 
 	private GameObject avatar, terrain;
@@ -107,7 +109,7 @@ public class MyGame extends VariableFrameRateGame
 	{	Matrix4f initialTranslation, initialScale;
 
 		// build dolphin in the center of the window
-		tageman = new GameObject(GameObject.root(), tageS, tageTX);
+		tageman = new GameObject(GameObject.root(), tagemanS, tagemanT);
 		//initialTranslation = (new Matrix4f()).translation(0,1,0);
 		initialScale = (new Matrix4f()).scaling(.5f);
 		//tageman.setLocalTranslation(initialTranslation);
@@ -218,7 +220,7 @@ public class MyGame extends VariableFrameRateGame
 		orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
 
 		//------------- INPUTS SECTION--------------------------
-		MoveAction fwdAction = new MoveAction(this, protClient, 'F');
+		/*MoveAction fwdAction = new MoveAction(this, protClient, 'F');
 		MoveAction bkwdAction = new MoveAction(this, protClient, 'B');
 
 		TurnAction turnAction = new TurnAction(this, protClient);
@@ -245,7 +247,7 @@ public class MyGame extends VariableFrameRateGame
 											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.D, 
 											turnRightAction, 
-											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);*/
 	
 
 	}
@@ -375,14 +377,15 @@ public class MyGame extends VariableFrameRateGame
 				ghostS = avatar.getShape();
 				ghostT = avatar.getTextureImage();
 
-				joinGame();
+				characterName = characterNames[selection];
+				joinGame(characterName);
 				break;
 		}
 		super.keyPressed(e);
 	}
 
-	private void joinGame() {
-		setupNetworking();
+	private void joinGame(String character) {
+		setupNetworking(character);
 
 		//------------- INPUTS SECTION--------------------------
 		MoveAction fwdAction = new MoveAction(this, protClient, 'F');
@@ -481,12 +484,34 @@ public class MyGame extends VariableFrameRateGame
 	// ---------- NETWORKING SECTION ----------------
 
 	public GameObject getAvatar() {return avatar;}
-	public ObjShape getGhostShape() {return ghostS;}
-	public TextureImage getGhostTexture() {return ghostT;}
+	public ObjShape getGhostShape(String name) {
+		if (name.equals("tageman")) {
+			return tagemanS;
+		} else if (name.equals("blinky") || name.equals("pinky") || name.equals("inky") || name.equals("clyde")) {
+			return pacmanGhostS;
+		} else {
+			return null;
+		}
+	}
+	public TextureImage getGhostTexture(String name) {
+		if (name.equals("tageman")) {
+			return tagemanT;
+		} else if (name.equals("blinky")) {
+			return blinkyT;
+		} else if (name.equals("pinky")) {
+			return pinkyT;
+		} else if (name.equals("inky")) {
+			return inkyT;
+		} else if (name.equals("clyde")) {
+			return clydeT;
+		} else {
+			return null;
+		}
+	}
 	public GhostManager getGhostManager() {return gm;}
 	public Engine getEngine() {return engine;}
 
-	private void setupNetworking()
+	private void setupNetworking(String character)
 	{	isClientConnected = false;	
 		try 
 		{	protClient = new ProtocolClient(InetAddress.getByName(serverAddress), serverPort, serverProtocol, this);
@@ -501,7 +526,7 @@ public class MyGame extends VariableFrameRateGame
 		else
 		{	// Send the initial join message with a unique identifier for this client
 			System.out.println("sending join message to protocol host");
-			protClient.sendJoinMessage();
+			protClient.sendJoinMessage(character);
 		}
 	}
 	
@@ -513,7 +538,15 @@ public class MyGame extends VariableFrameRateGame
 
 	public Vector3f getPlayerPosition() { return avatar.getWorldLocation(); }
 
+	public String getCharacterName() { return characterName; }
+
 	public void setIsConnected(boolean value) { this.isClientConnected = value; }
+
+	@Override
+	public void shutdown() {
+		super.shutdown();
+		protClient.sendByeMessage();
+	}
 	
 	private class SendCloseConnectionPacketAction extends AbstractInputAction
 	{	@Override

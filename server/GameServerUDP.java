@@ -25,9 +25,10 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 				{	IClientInfo ci;					
 					ci = getServerSocket().createClientInfo(senderIP, senderPort);
 					UUID clientID = UUID.fromString(messageTokens[1]);
+					String character = messageTokens[2];
 					addClient(ci, clientID);
 					System.out.println("Join request received from - " + clientID.toString());
-					sendJoinedMessage(clientID, true);
+					sendJoinedMessage(clientID, character, true);
 				} 
 				catch (IOException e) 
 				{	e.printStackTrace();
@@ -47,7 +48,8 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 			if(messageTokens[0].compareTo("create") == 0)
 			{	UUID clientID = UUID.fromString(messageTokens[1]);
 				String[] pos = {messageTokens[2], messageTokens[3], messageTokens[4]};
-				sendCreateMessages(clientID, pos);
+				String character = messageTokens[5];
+				sendCreateMessages(clientID, character, pos);
 				sendWantsDetailsMessages(clientID);
 			}
 			
@@ -57,7 +59,8 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 			{	UUID clientID = UUID.fromString(messageTokens[1]);
 				UUID remoteID = UUID.fromString(messageTokens[2]);
 				String[] pos = {messageTokens[3], messageTokens[4], messageTokens[5]};
-				sendDetailsForMessage(clientID, remoteID, pos);
+				String character = messageTokens[6];
+				sendDetailsForMessage(clientID, remoteID, pos, character);
 			}
 			
 			// MOVE --- Case where server receives a move message
@@ -73,12 +76,14 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 	// request was able to be granted. 
 	// Message Format: (join,success) or (join,failure)
 	
-	public void sendJoinedMessage(UUID clientID, boolean success)
+	public void sendJoinedMessage(UUID clientID, String character, boolean success)
 	{	try 
 		{	System.out.println("trying to confirm join");
 			String message = new String("join,");
-			if(success)
+			if(success) {
 				message += "success";
+				message += "," + character;
+			}
 			else
 				message += "failure";
 			sendPacket(message, clientID);
@@ -108,12 +113,13 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 	// connected to the server. 
 	// Message Format: (create,remoteId,x,y,z) where x, y, and z represent the position
 
-	public void sendCreateMessages(UUID clientID, String[] position)
+	public void sendCreateMessages(UUID clientID, String character, String[] position)
 	{	try 
 		{	String message = new String("create," + clientID.toString());
 			message += "," + position[0];
 			message += "," + position[1];
-			message += "," + position[2];	
+			message += "," + position[2];
+			message += "," + character;
 			forwardPacketToAll(message, clientID);
 		} 
 		catch (IOException e) 
@@ -126,13 +132,15 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 	// remoteId is used to send this message to the proper client. 
 	// Message Format: (dsfr,remoteId,x,y,z) where x, y, and z represent the position.
 
-	public void sendDetailsForMessage(UUID clientID, UUID remoteId, String[] position)
+	public void sendDetailsForMessage(UUID clientID, UUID remoteId, String[] position, String character)
 	{	try 
 		{	String message = new String("dsfr," + remoteId.toString());
 			message += "," + position[0];
 			message += "," + position[1];
 			message += "," + position[2];	
+			message += "," + character;
 			sendPacket(message, clientID);
+			System.out.println(character + " gave details");
 		} 
 		catch (IOException e) 
 		{	e.printStackTrace();
@@ -147,6 +155,7 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 	{	try 
 		{	String message = new String("wsds," + clientID.toString());	
 			forwardPacketToAll(message, clientID);
+			System.out.println(clientID + " wants details");
 		} 
 		catch (IOException e) 
 		{	e.printStackTrace();
