@@ -13,6 +13,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import javax.swing.*;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 
 import java.io.*;
 import java.util.*;
@@ -51,14 +53,16 @@ public class MyGame extends VariableFrameRateGame
 	private AnimatedShape tageS;
 	private Light light1;
 	private PhysicsEngine physicsEngine;
-	private PhysicsObject pelletP, tageP;
-	private float vals[] = new float[16];
+	private PhysicsObject pelletP, tageP, blinkyP, terrainP;
+	private float vals[] = new float[16], bounceCooldown;
 
 	private String serverAddress;
 	private int serverPort;
 	private ProtocolType serverProtocol;
 	private ProtocolClient protClient;
 	private boolean isClientConnected = false, alreadyMoving = false, isMovingForward = false, isMovingBackward = false;
+
+	private int mapWidth, mapHeight;
 
 	public MyGame(String serverAddress, int serverPort, String protocol) {
 		super();
@@ -110,17 +114,19 @@ public class MyGame extends VariableFrameRateGame
 
 		// build dolphin in the center of the window
 		tageman = new GameObject(GameObject.root(), tageS, tageTX);
-		//initialTranslation = (new Matrix4f()).translation(0,1,0);
+		initialTranslation = new Matrix4f().translation(0f, .5f, -5f);
 		initialScale = (new Matrix4f()).scaling(.5f);
-		//tageman.setLocalTranslation(initialTranslation);
+		tageman.setLocalTranslation(initialTranslation);
 		tageman.setLocalScale(initialScale);
 		avatar = tageman;
 		avatarSelection.add(tageman);
 
 		blinky = new GameObject(GameObject.root(), pacmanGhostS, blinkyT);
-		initialScale = (new Matrix4f()).scaling(0.5f);
+		initialTranslation = new Matrix4f().translation(5f, 1f, -5f);
+		initialScale = (new Matrix4f()).scaling(0.4f);
+		blinky.setLocalTranslation(initialTranslation);
 		blinky.setLocalScale(initialScale);
-		blinky.getRenderStates().disableRendering();
+		//blinky.getRenderStates().disableRendering();
 		avatarSelection.add(blinky);
 
 		pinky = new GameObject(GameObject.root(), pacmanGhostS, pinkyT);
@@ -151,9 +157,11 @@ public class MyGame extends VariableFrameRateGame
 		terrain.getRenderStates().setTileFactor(10);
 
 		pellet = new GameObject(GameObject.root(), pelletS);
+		initialTranslation = (new Matrix4f()).translation(0, .5f, 0);
+		pellet.setLocalTranslation(initialTranslation);
 		initialScale = (new Matrix4f()).scaling(.1f);
 		pellet.setLocalScale(initialScale);
-		pellet.setLocalLocation(new Vector3f(0, 1f, 0));
+
 	}
 
 	@Override
@@ -180,34 +188,52 @@ public class MyGame extends VariableFrameRateGame
 		(engine.getRenderSystem()).setWindowDimensions(1900,1000);
 		
 		// --- initialize physics system ---
-		float[] gravity = {0f, -5f, 0f};
+		float[] gravity = {0f, -1f, 0f};
 		physicsEngine = (engine.getSceneGraph()).getPhysicsEngine();
-		//physicsEngine.setGravity(gravity);
+		physicsEngine.setGravity(gravity);
 
 		// --- create physics world ---
 		float mass = 1.0f;
-		float up[ ] = {0,2,0};
+		float[] upVector = {0,1f,0};
 		float pelletRadius = 0.1f;
 		float tagemanRadius = .5f;
-		float height = 2.0f;
+		float tagemanHeight = .15f;
+		float ghostRadius = .4f;
+		float ghostHeight = .5f;
+		//float height = 2.0f;
 		double[ ] tempTransform;
+		float planeConstant = 0f;
 		
 		Matrix4f translation = new Matrix4f(pellet.getLocalTranslation());
 		tempTransform = toDoubleArray(translation.get(vals));
-		pelletP = (engine.getSceneGraph()).addPhysicsSphere(mass, tempTransform, pelletRadius);
-		//caps1P.setBounciness(0.8f);
+		pelletP = (engine.getSceneGraph()).addPhysicsSphere(0f, tempTransform, pelletRadius);
+		pelletP.setBounciness(0.8f);
 		pellet.setPhysicsObject(pelletP);
 
 		translation = new Matrix4f(tageman.getLocalTranslation());
-		//translation.translate(0f, tagemanRadius, 0f);
 		tempTransform = toDoubleArray(translation.get(vals));
-		tageP = (engine.getSceneGraph()).addPhysicsSphere(mass, tempTransform, tagemanRadius);
-		//caps1P.setBounciness(0.8f);
+		tageP = (engine.getSceneGraph()).addPhysicsCapsule(mass, tempTransform, tagemanRadius, tagemanHeight);
+		tageP.setBounciness(0.8f);
 		tageman.setPhysicsObject(tageP);
+		((JBulletPhysicsObject) tageP).getRigidBody().setAngularFactor(0f);
+
+		translation = new Matrix4f(blinky.getLocalTranslation());
+		tempTransform = toDoubleArray(translation.get(vals));
+		blinkyP = (engine.getSceneGraph()).addPhysicsCapsule(mass, tempTransform, ghostRadius, ghostHeight);
+		blinkyP.setBounciness(0.8f);
+		blinky.setPhysicsObject(blinkyP);
+		((JBulletPhysicsObject) blinkyP).getRigidBody().setAngularFactor(0f);
+
+		translation = new Matrix4f(terrain.getLocalTranslation());
+		tempTransform = toDoubleArray(translation.get(vals));
+		terrainP = (engine.getSceneGraph()).addPhysicsStaticPlane(tempTransform, upVector, planeConstant);
+		//caps1P.setBounciness(0.8f);
+		terrain.setPhysicsObject(terrainP);
+
 
 		//setupNetworking();
 
-		engine.enableGraphicsWorldRender();
+		//engine.disableGraphicsWorldRender();
 		engine.enablePhysicsWorldRender();
 
 		// ------------- positioning the camera -------------
@@ -218,37 +244,6 @@ public class MyGame extends VariableFrameRateGame
 		
 		Camera c = (engine.getRenderSystem().getViewport("MAIN").getCamera());
 		orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
-
-		//------------- INPUTS SECTION--------------------------
-		/*MoveAction fwdAction = new MoveAction(this, protClient, 'F');
-		MoveAction bkwdAction = new MoveAction(this, protClient, 'B');
-
-		TurnAction turnAction = new TurnAction(this, protClient);
-		TurnAction turnLeftAction = new TurnAction(this, protClient, 1);
-		TurnAction turnRightAction = new TurnAction(this, protClient, -1);
-
-		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._1, 
-											fwdAction, 
-											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.W, 
-											fwdAction, 
-											InputManager.INPUT_ACTION_TYPE.ON_PRESS_AND_RELEASE);
-		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Button._3, 
-											bkwdAction, 
-											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.S, 
-											bkwdAction, 
-											InputManager.INPUT_ACTION_TYPE.ON_PRESS_AND_RELEASE);
-		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.A, 
-											turnLeftAction, 
-											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-		im.associateActionWithAllGamepads(net.java.games.input.Component.Identifier.Axis.X, 
-											turnAction, 
-											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.D, 
-											turnRightAction, 
-											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);*/
-	
 
 	}
 
@@ -284,57 +279,81 @@ public class MyGame extends VariableFrameRateGame
 
 		tageS.updateAnimation();
 
-		float height = terrain.getHeight(avatarLoc.x(), avatarLoc.z());
-
 		if (joined) {
-			avatar.setLocalLocation(new Vector3f(avatarLoc.x(), height+.5f, avatarLoc.z()));
 
-			if (isMovingForward) {
-				Vector4f moveDirection = new Vector4f(0f, 0f, 1f, 0f);
-				moveDirection.mul(avatar.getWorldRotation());
-				float[] velocity = new float[] { 0f, 0f, 2.0f };
-				if (avatar.getPhysicsObject() != null) {
-					avatar.getPhysicsObject().setLinearVelocity(velocity);
-				}
-			}
-			else if (isMovingBackward) {
-				Vector4f moveDirection = new Vector4f(0f, 0f, -1f, 0f);
-				moveDirection.mul(avatar.getWorldRotation());
+    float wallThreshold = 1.0f;
+    float radiusOffset = 0.5f;
+    float stepSize = 0.05f;
+    float moveSpeed = 2f;
 
-				float[] velocity = new float[] { 0f, 0f, -2.0f };
+    if (isMovingForward || isMovingBackward) {
+            Vector4f moveDirection = isMovingForward ?
+                new Vector4f(0f, 0f, 1f, 0f) :
+                new Vector4f(0f, 0f, -1f, 0f);
 
-				if (avatar.getPhysicsObject() != null) {
-					avatar.getPhysicsObject().setLinearVelocity(velocity);
-				}
-			}
-			else {
-				// Stop when no key is pressed
-				if (avatar.getPhysicsObject() != null) {
-					avatar.getPhysicsObject().setLinearVelocity(new float[] { 0f, 0f, 0f });
-				}
-			}
+            moveDirection.mul(avatar.getWorldRotation());
 
+            Vector3f currPos = avatar.getWorldLocation();
+            Vector3f nextPos = new Vector3f(currPos.x() + moveDirection.x() * stepSize, 0, currPos.z() + moveDirection.z() * stepSize);
 
+            float nextHeight = terrain.getHeight(nextPos.x(), nextPos.z());
+
+            if (nextHeight < wallThreshold) {
+                Matrix4f newTransform = new Matrix4f().translation(nextPos.x(), nextHeight + radiusOffset, nextPos.z());
+
+                avatar.getPhysicsObject().setTransform(toDoubleArray(newTransform.get(vals)));
+
+                avatar.getPhysicsObject().setLinearVelocity(new float[] { moveDirection.x() * moveSpeed, 0f, moveDirection.z() * moveSpeed });
+            } else {
+                avatar.getPhysicsObject().setLinearVelocity(new float[] { 0f, 0f, 0f });
+            }
+    } else {
+        avatar.getPhysicsObject().setLinearVelocity(new float[] { 0f, 0f, 0f });
+    }
+
+			// Tranlation of movements into physics
 			AxisAngle4f aa = new AxisAngle4f();
 			Matrix4f mat = new Matrix4f();
 			Matrix4f mat2 = new Matrix4f().identity();
 			Matrix4f mat3 = new Matrix4f().identity();
 			checkForCollisions();
 			physicsEngine.update((float)elapsedTime);
-			for (GameObject go:engine.getSceneGraph().getGameObjects()){
-				if (go.getPhysicsObject() != null) { 
-					// set translation
-					mat.set(toFloatArray(go.getPhysicsObject().getTransform()));
-					mat2.set(3,0,mat.m30());
-					mat2.set(3,1,mat.m31());
-					mat2.set(3,2,mat.m32());
-					go.setLocalTranslation(mat2);
-					// set rotation
-					mat.getRotation(aa);
-					mat3.rotation(aa);
-					go.setLocalRotation(mat3);
-				}
-			}
+			for (GameObject go : engine.getSceneGraph().getGameObjects()){
+    if (go.getPhysicsObject() != null) { 
+        // set translation
+        mat.set(toFloatArray(go.getPhysicsObject().getTransform()));
+        mat2.set(3,0,mat.m30());
+        mat2.set(3,1,mat.m31());
+        mat2.set(3,2,mat.m32());
+
+        // 🚨 ADD THIS WALL CHECK:
+        float goX = mat.m30();
+        float goZ = mat.m32();
+        float wallHeight = terrain.getHeight(goX, goZ);
+
+        if (wallHeight >= wallThreshold) {
+    float correctedY = wallHeight + radiusOffset;
+
+    mat2.set(3, 1, correctedY); // visually move the mesh
+    go.getPhysicsObject().setLinearVelocity(new float[] {0f, 0f, 0f}); // stop motion
+
+    // 🛠️ keep the physics body aligned!
+    Matrix4f physicsTransform = new Matrix4f().translation(goX, correctedY, goZ);
+    go.getPhysicsObject().setTransform(toDoubleArray(physicsTransform.get(vals)));
+}
+
+
+        go.setLocalTranslation(mat2);
+
+        // set rotation
+        if (go != avatar) {
+            mat.getRotation(aa);
+            mat3.rotation(aa);
+            go.setLocalRotation(mat3);
+        }
+    }
+}
+
 		}
 	}
 
@@ -376,6 +395,8 @@ public class MyGame extends VariableFrameRateGame
 
 				ghostS = avatar.getShape();
 				ghostT = avatar.getTextureImage();
+
+				tageman.getRenderStates().enableRendering();
 
 				characterName = characterNames[selection];
 				joinGame(characterName);
@@ -471,15 +492,49 @@ public class MyGame extends VariableFrameRateGame
 			object2 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody1();
 			JBulletPhysicsObject obj1 = JBulletPhysicsObject.getJBulletPhysicsObject(object1);
 			JBulletPhysicsObject obj2 = JBulletPhysicsObject.getJBulletPhysicsObject(object2);
+
+			boolean tagemanHitPellet = (obj1 == tageP && obj2 == pelletP) || (obj1 == pelletP && obj2 == tageP);
+
 			for (int j = 0; j < manifold.getNumContacts(); j++) {
 				contactPoint = manifold.getContactPoint(j);
-				if (contactPoint.getDistance() < 0.0f) {
-					System.out.println("collision: " + obj1 + " and " + obj2);
+				if (contactPoint.getDistance() < 0.0f && tagemanHitPellet) {
+					System.out.println("Pellet eaten!");
+					pellet.getRenderStates().disableRendering();
+					(engine.getSceneGraph()).removeGameObject(pellet);
+					physicsEngine.removeObject(pellet.getPhysicsObject().getUID());
 					break;
+				}
+				if (contactPoint.getDistance() < 0.0f && ((obj1 == tageP && obj2 == blinkyP) || (obj1 == blinkyP && obj2 == tageP))) {
+					// Apply bounce forces
+					// Get positions
+					javax.vecmath.Vector3f posTageman = new javax.vecmath.Vector3f();
+					javax.vecmath.Vector3f posBlinky = new javax.vecmath.Vector3f();
+					((JBulletPhysicsObject) tageP).getRigidBody().getCenterOfMassPosition(posTageman);
+					((JBulletPhysicsObject) blinkyP).getRigidBody().getCenterOfMassPosition(posBlinky);
+
+
+					// Direction from Blinky to Tageman
+					javax.vecmath.Vector3f bounceDirection = new javax.vecmath.Vector3f();
+					bounceDirection.sub(posTageman, posBlinky); // Tageman - Blinky
+					bounceDirection.normalize(); // unit vector
+
+					// Now apply impulse to both
+					javax.vecmath.Vector3f impulseToTageman = new javax.vecmath.Vector3f(bounceDirection);
+					impulseToTageman.scale(.5f); // moderate force
+
+					javax.vecmath.Vector3f impulseToBlinky = new javax.vecmath.Vector3f(bounceDirection);
+					impulseToBlinky.scale(-.5f); // opposite direction
+
+					((JBulletPhysicsObject) tageP).getRigidBody().applyCentralImpulse(impulseToTageman);
+					((JBulletPhysicsObject) blinkyP).getRigidBody().applyCentralImpulse(impulseToBlinky);
+
+					System.out.println("Tageman and Blinky bounced!");
 				}
 			}
 		}
 	}
+
+	
 
 	// ---------- NETWORKING SECTION ----------------
 
