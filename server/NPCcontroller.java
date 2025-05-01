@@ -40,7 +40,7 @@ public class NPCcontroller {
             float elapsedThinkMilliSecs = (currentTime - lastThinkUpdateTime)/(1000000.0f);
             float elapsedTickMilliSecs = (currentTime - lastTickUpdateTime)/(1000000.0f);
 
-            if (elapsedTickMilliSecs >= 25.0f) {
+            if (elapsedTickMilliSecs >= 50.0f) {
                 lastTickUpdateTime = currentTime;
                 npc.updateLocation();
                 server.sendNPCinfo();
