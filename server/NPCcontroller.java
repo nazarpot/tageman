@@ -26,7 +26,32 @@ public class NPCcontroller {
         didOneSecPass = false;
         setupNPCs();
         setupBehaviorTree();
-        npcLoop();
+        Thread thread = new Thread(){
+            public void npcLoop() {
+                while (true) {
+                    long currentTime = System.nanoTime();
+                    float elapsedThinkMilliSecs = (currentTime - lastThinkUpdateTime)/(1000000.0f);
+                    float elapsedTickMilliSecs = (currentTime - lastTickUpdateTime)/(1000000.0f);
+
+                if (elapsedTickMilliSecs >= 25.0f) {
+                    lastTickUpdateTime = currentTime;
+                    npc.updateLocation();
+                    server.sendNPCinfo();
+                }
+
+                if (elapsedThinkMilliSecs >= 250.0f) {
+                    lastThinkUpdateTime = currentTime;
+                    didOneSecPass = true;
+                    bt.update(elapsedThinkMilliSecs);
+                } else {
+                    didOneSecPass = false;
+                }
+
+                Thread.yield();
+        }
+    }
+        };
+        thread.start();
     }
 
     public void setupNPCs() {
@@ -34,29 +59,7 @@ public class NPCcontroller {
         npc.randomizeLocation(rn.nextInt(40), rn.nextInt(40));
     }
 
-    public void npcLoop() {
-        while (true) {
-            long currentTime = System.nanoTime();
-            float elapsedThinkMilliSecs = (currentTime - lastThinkUpdateTime)/(1000000.0f);
-            float elapsedTickMilliSecs = (currentTime - lastTickUpdateTime)/(1000000.0f);
-
-            if (elapsedTickMilliSecs >= 50.0f) {
-                lastTickUpdateTime = currentTime;
-                npc.updateLocation();
-                server.sendNPCinfo();
-            }
-
-            if (elapsedThinkMilliSecs >= 250.0f) {
-                lastThinkUpdateTime = currentTime;
-                didOneSecPass = true;
-                bt.update(elapsedThinkMilliSecs);
-            } else {
-                didOneSecPass = false;
-            }
-
-            Thread.yield();
-        }
-    }
+    
 
     public void setupBehaviorTree() {
         bt.insertAtRoot(new BTSequence(10));
