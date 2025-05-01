@@ -73,6 +73,7 @@ public class MyGame extends VariableFrameRateGame
 	private ProtocolType serverProtocol;
 	private ProtocolClient protClient;
 	private boolean isClientConnected = false, alreadyMoving = false, isMovingForward = false, isMovingBackward = false;
+	private boolean isGameOngoing = false;
 
 	private int mapWidth, mapHeight;
 
@@ -121,22 +122,16 @@ public class MyGame extends VariableFrameRateGame
 	}
 
 	@Override
-public void loadSounds()
-{ AudioResource resource1, resource2;
-audioMgr = engine.getAudioManager();
-resource1 = audioMgr.createAudioResource("start.wav", AudioResourceType.AUDIO_SAMPLE);
-//resource2 = audioMgr.createAudioResource("ocean.wav", AudioResourceType.AUDIO_SAMPLE);
-hereSound = new Sound(resource1, SoundType.SOUND_EFFECT, 100, false);
-//oceanSound = new Sound(resource2, SoundType.SOUND_EFFECT, 100, true);
-hereSound.initialize(audioMgr);
-//oceanSound.initialize(audioMgr);
-hereSound.setMaxDistance(10.0f);
-hereSound.setMinDistance(0.5f);
-hereSound.setRollOff(5.0f);
-//oceanSound.setMaxDistance(10.0f);
-//oceanSound.setMinDistance(0.5f);
-//oceanSound.setRollOff(5.0f);
-}
+	public void loadSounds(){ 
+		AudioResource resource1, resource2;
+		audioMgr = engine.getAudioManager();
+		resource1 = audioMgr.createAudioResource("here.wav", AudioResourceType.AUDIO_SAMPLE);
+		hereSound = new Sound(resource1, SoundType.SOUND_EFFECT, 100, true);
+		hereSound.initialize(audioMgr);
+		hereSound.setMaxDistance(10.0f);
+		hereSound.setMinDistance(0.5f);
+		hereSound.setRollOff(5.0f);
+	}
 
 	@Override
 	public void buildObjects()
@@ -144,17 +139,16 @@ hereSound.setRollOff(5.0f);
 
 		// build dolphin in the center of the window
 		tageman = new GameObject(GameObject.root(), tageS, tageTX);
-		initialTranslation = new Matrix4f().translation(0f, .5f, -5f);
 		initialScale = (new Matrix4f()).scaling(.5f);
-		tageman.setLocalTranslation(initialTranslation);
 		tageman.setLocalScale(initialScale);
+		//tageman.getRenderStates().disableRendering();
 		avatar = tageman;
 		avatarSelection.add(tageman);
 
 		blinky = new GameObject(GameObject.root(), pacmanGhostS, blinkyT);
-		initialTranslation = new Matrix4f().translation(5f, 1f, -5f);
+		//initialTranslation = new Matrix4f().translation(5f, 1f, -5f);
 		initialScale = (new Matrix4f()).scaling(0.4f);
-		blinky.setLocalTranslation(initialTranslation);
+		//blinky.setLocalTranslation(initialTranslation);
 		blinky.setLocalScale(initialScale);
 		//blinky.getRenderStates().disableRendering();
 		avatarSelection.add(blinky);
@@ -219,9 +213,10 @@ hereSound.setRollOff(5.0f);
 		elapsedTime = 0.0;
 		(engine.getRenderSystem()).setWindowDimensions(1900,1000);
 
+		// initial sound settings
 		hereSound.setLocation(tageman.getWorldLocation());
-setEarParameters();
-hereSound.play();
+		setEarParameters();
+		hereSound.play();
 		
 		// --- initialize physics system ---
 		float[] gravity = {0f, -5f, 0f};
@@ -291,7 +286,7 @@ hereSound.play();
 		//setupNetworking();
 
 		//engine.disableGraphicsWorldRender();
-		//engine.enablePhysicsWorldRender();
+		engine.enablePhysicsWorldRender();
 
 		// ------------- positioning the camera -------------
 		(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0,0,5));
@@ -303,11 +298,11 @@ hereSound.play();
 		orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
 	}
 
-	public void setEarParameters()
-{ Camera camera = (engine.getRenderSystem()).getViewport("MAIN").getCamera();
-audioMgr.getEar().setLocation(avatar.getWorldLocation());
-audioMgr.getEar().setOrientation(camera.getN(), new Vector3f(0.0f, 1.0f, 0.0f));
-}
+	public void setEarParameters(){ 
+		Camera camera = (engine.getRenderSystem()).getViewport("MAIN").getCamera();
+		audioMgr.getEar().setLocation(avatar.getWorldLocation());
+		audioMgr.getEar().setOrientation(camera.getN(), new Vector3f(0.0f, 1.0f, 0.0f));
+	}
 
 	@Override
 	public void update()
@@ -342,8 +337,8 @@ audioMgr.getEar().setOrientation(camera.getN(), new Vector3f(0.0f, 1.0f, 0.0f));
 		tageS.updateAnimation();
 
 		// update sound
-hereSound.setLocation(tageman.getWorldLocation());
-setEarParameters();
+		hereSound.setLocation(tageman.getWorldLocation());
+		setEarParameters();
 
 		if (joined) {
 
@@ -467,7 +462,7 @@ setEarParameters();
 				joinGame(characterName);
 				break;
 			case KeyEvent.VK_SPACE:		//to start game. pacman starts the game
-				if (joined == true && characterName.equals("tageman")) {
+				if (joined == true && characterName.equals("tageman") && isGameOngoing) {
 					startGame();
 				}
 		}
@@ -513,6 +508,7 @@ setEarParameters();
 		Vector3f position = new Vector3f(0.0f, 0.0f, 5.0f);
 		System.out.println("creating npc ghost");
 		protClient.sendCreateNPCmessage(position);
+		isGameOngoing = true;
 	}
 
 	public void setTagemanChomp(boolean moving) {
