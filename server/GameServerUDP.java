@@ -7,8 +7,13 @@ import tage.networking.server.IClientInfo;
 
 public class GameServerUDP extends GameConnectionServer<UUID> 
 {
-	public GameServerUDP(int localPort) throws IOException 
+	NPCcontroller npcCtrl;
+	UUID tagemanID;
+	String[] tagemanLoc = new String[3];
+
+	public GameServerUDP(int localPort, NPCcontroller npc) throws IOException 
 	{	super(localPort, ProtocolType.UDP);
+		npcCtrl = npc;
 	}
 
 	@Override
@@ -29,6 +34,10 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 					addClient(ci, clientID);
 					System.out.println("Join request received from - " + clientID.toString());
 					sendJoinedMessage(clientID, character, true);
+
+					if (character.equals("tageman")) {
+						tagemanID = clientID;
+					}
 				} 
 				catch (IOException e) 
 				{	e.printStackTrace();
@@ -41,6 +50,10 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 				System.out.println("Exit request received from - " + clientID.toString());
 				sendByeMessages(clientID);
 				removeClient(clientID);
+
+				if (clientID.equals(tagemanID)) {
+					tagemanID = null;
+				}
 			}
 			
 			// CREATE -- Case where server receives a create message (to specify avatar location)
@@ -51,6 +64,13 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 				String character = messageTokens[5];
 				sendCreateMessages(clientID, character, pos);
 				sendWantsDetailsMessages(clientID);
+
+				if (character.equals("tageman")) {
+					tagemanID = clientID;
+					tagemanLoc[0] = pos[0];
+					tagemanLoc[1] = pos[1];
+					tagemanLoc[2] = pos[2];
+				}
 			}
 			
 			// DETAILS-FOR --- Case where server receives a details for message
@@ -68,9 +88,45 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 			if(messageTokens[0].compareTo("move") == 0)
 			{	UUID clientID = UUID.fromString(messageTokens[1]);
 				String[] pos = {messageTokens[2], messageTokens[3], messageTokens[4]};
+				System.out.println(message);
 				String rotate = messageTokens[5];
 				sendMoveMessages(clientID, pos, rotate);
-	}	}	}
+
+				if (clientID.equals(tagemanID)) {
+					System.out.println("updated tagemanLocation");
+					tagemanLoc[0] = pos[0];
+					tagemanLoc[1] = pos[1];
+					tagemanLoc[2] = pos[2];
+				}
+			}	
+
+			//TAGEMAN is or is not CHOMPING
+			if (messageTokens[0].compareTo("chomp") == 0) {
+				UUID clientID = UUID.fromString(messageTokens[1]);
+				String toChomp = messageTokens[2];
+				sendChompMessages(clientID, toChomp);
+			}
+
+			//CREATE NPC
+			if (messageTokens[0].compareTo("createNPC") == 0) {
+				UUID clientID = UUID.fromString(messageTokens[1]);
+				String[] ghostPosition = { messageTokens[2], messageTokens[3], messageTokens[4]};
+				try {
+					sendCreateNPCmsg(clientID, ghostPosition);
+				} catch (IOException e) {
+					System.out.println("error creating npc");
+				}
+			}
+
+			//NEED NPC
+			if(messageTokens[0].compareTo("needNPC") == 0) {
+				System.out.println("server got a needNPC message");
+				UUID clientID = UUID.fromString(messageTokens[1]);
+				//sendNPCstart(clientID);
+			}
+
+		}
+	}
 
 	// Informs the client who just requested to join the server if their if their 
 	// request was able to be granted. 
@@ -178,4 +234,80 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 		catch (IOException e) 
 		{	e.printStackTrace();
 	}	}
+
+	public void sendChompMessages(UUID clientID, String toChomp) {
+		try {
+			String message = new String("chomp," + clientID.toString());
+			message += "," + toChomp;
+			forwardPacketToAll(message, clientID);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	// ---------- protocols for NPC's ---------------------------
+	public void handleNearTiming(UUID clientID) {
+		//npcCtrl.setNearFlag(true);
+	}
+
+	public void sendCheckForAvatarNear() {
+		try {
+			String message = new String("isnr");
+			message += "," + (npcCtrl.getNPC()).getX();
+			message += "," + (npcCtrl.getNPC()).getY();
+			message += "," + (npcCtrl.getNPC()).getZ();
+			sendPacketToAll(message);
+		} catch (IOException e) {
+			System.out.println("couldn't send msg"); 
+			e.printStackTrace();
+		}
+	}
+
+	public void sendNPCinfo() {
+		try {
+			String message = new String("npcInfo");
+			message += "," + (npcCtrl.getNPC()).getX();
+			message += "," + (npcCtrl.getNPC()).getY();
+			message += "," + (npcCtrl.getNPC()).getZ();
+			sendPacketToAll(message);
+		} catch (IOException e) {
+			System.out.println("couldn't send info about npc");
+			e.printStackTrace();
+		}
+	}
+
+	public void requestTarget() {
+		npcCtrl.setTarget(tagemanLoc);
+	}
+
+	public void lookAtTarget() {
+		try {
+			String message = new String("lookAt");
+			message += "," + tagemanLoc[0];
+			message += "," + tagemanLoc[1];
+			message += "," + tagemanLoc[2];
+		sendPacketToAll(message);
+		} catch (IOException e) {
+			System.out.println("Unable to send command for NPC to look at tageman");
+			e.printStackTrace();
+		}
+		
+	}
+
+	// -------- Sending NPC messages ------------------------
+	//infomrs clients about the whereabouts of the NPCs
+	public void sendCreateNPCmsg(UUID clientID, String[] position) throws IOException {
+		try {
+			System.out.println("server telling clients about an NPC");
+			String message = new String("createNPC," + clientID.toString());
+			message += "," + position[0];
+			message += "," + position[1];
+			message += "," + position[2];
+			forwardPacketToAll(message, clientID);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		npcCtrl.start(this);
+	}
+
 }

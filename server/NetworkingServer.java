@@ -5,14 +5,18 @@ public class NetworkingServer
 {
 	private GameServerUDP thisUDPServer;
 	private GameServerTCP thisTCPServer;
+	private NPCcontroller npcCtrl;
 
 	public NetworkingServer(int serverPort, String protocol) 
-	{	try 
+	{	
+		npcCtrl = new NPCcontroller();
+		
+		try 
 		{	if(protocol.toUpperCase().compareTo("TCP") == 0)
 			{	thisTCPServer = new GameServerTCP(serverPort);
 			}
 			else
-			{	thisUDPServer = new GameServerUDP(serverPort);
+			{	thisUDPServer = new GameServerUDP(serverPort, npcCtrl);
 			}
 		} 
 		catch (IOException e) 

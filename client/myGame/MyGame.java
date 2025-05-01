@@ -53,8 +53,11 @@ public class MyGame extends VariableFrameRateGame
 	private AnimatedShape tageS;
 	private Light light1;
 	private PhysicsEngine physicsEngine;
-	private PhysicsObject pelletP, tageP, blinkyP, terrainP;
+	private PhysicsObject pelletP, tageP, blinkyP, pinkyP, inkyP, clydeP, terrainP;
 	private float vals[] = new float[16], bounceCooldown;
+
+	private ObjShape npcShape;
+	private TextureImage npcTex;
 
 	private String serverAddress;
 	private int serverPort;
@@ -89,7 +92,6 @@ public class MyGame extends VariableFrameRateGame
 		tageS.loadAnimation("Action.027", "tagemanCHOMP.rka");
 		pelletS = new Sphere();
 		terrainS = new TerrainPlane(1000);
-		//ghostS = new ImportedModel("dolphinHighPoly.obj");
 		pacmanGhostS = new ImportedModel("ghost.obj");
 
 	}
@@ -97,7 +99,6 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void loadTextures()
 	{	tageTX = new TextureImage("tagemanTex.png");
-		//ghostT = new TextureImage("redDolphin.jpg");
 		mazeTx = new TextureImage("background.png");
 		terrainT = new TextureImage("rigidpacmanmaze2.jpg");
 
@@ -106,6 +107,8 @@ public class MyGame extends VariableFrameRateGame
 		inkyT = new TextureImage("inky.png");
 		clydeT = new TextureImage("clyde.png");
 		scaredGhostT = new TextureImage("scared.png");
+
+		npcTex = scaredGhostT;
 	}
 
 	@Override
@@ -126,7 +129,7 @@ public class MyGame extends VariableFrameRateGame
 		initialScale = (new Matrix4f()).scaling(0.4f);
 		blinky.setLocalTranslation(initialTranslation);
 		blinky.setLocalScale(initialScale);
-		//blinky.getRenderStates().disableRendering();
+		blinky.getRenderStates().disableRendering();
 		avatarSelection.add(blinky);
 
 		pinky = new GameObject(GameObject.root(), pacmanGhostS, pinkyT);
@@ -161,6 +164,8 @@ public class MyGame extends VariableFrameRateGame
 		pellet.setLocalTranslation(initialTranslation);
 		initialScale = (new Matrix4f()).scaling(.1f);
 		pellet.setLocalScale(initialScale);
+
+		npcShape = pacmanGhostS;
 
 	}
 
@@ -224,6 +229,27 @@ public class MyGame extends VariableFrameRateGame
 		blinky.setPhysicsObject(blinkyP);
 		((JBulletPhysicsObject) blinkyP).getRigidBody().setAngularFactor(0f);
 
+		translation = new Matrix4f(pinky.getLocalTranslation());
+		tempTransform = toDoubleArray(translation.get(vals));
+		pinkyP = (engine.getSceneGraph()).addPhysicsCapsule(mass, tempTransform, ghostRadius, ghostHeight);
+		pinkyP.setBounciness(0.8f);
+		pinky.setPhysicsObject(pinkyP);
+		((JBulletPhysicsObject) pinkyP).getRigidBody().setAngularFactor(0f);
+
+		translation = new Matrix4f(inky.getLocalTranslation());
+		tempTransform = toDoubleArray(translation.get(vals));
+		inkyP = (engine.getSceneGraph()).addPhysicsCapsule(mass, tempTransform, ghostRadius, ghostHeight);
+		inkyP.setBounciness(0.8f);
+		inky.setPhysicsObject(inkyP);
+		((JBulletPhysicsObject) inkyP).getRigidBody().setAngularFactor(0f);
+
+		translation = new Matrix4f(clyde.getLocalTranslation());
+		tempTransform = toDoubleArray(translation.get(vals));
+		clydeP = (engine.getSceneGraph()).addPhysicsCapsule(mass, tempTransform, ghostRadius, ghostHeight);
+		clydeP.setBounciness(0.8f);
+		clyde.setPhysicsObject(clydeP);
+		((JBulletPhysicsObject) clydeP).getRigidBody().setAngularFactor(0f);
+
 		translation = new Matrix4f(terrain.getLocalTranslation());
 		tempTransform = toDoubleArray(translation.get(vals));
 		terrainP = (engine.getSceneGraph()).addPhysicsStaticPlane(tempTransform, upVector, planeConstant);
@@ -234,7 +260,7 @@ public class MyGame extends VariableFrameRateGame
 		//setupNetworking();
 
 		//engine.disableGraphicsWorldRender();
-		engine.enablePhysicsWorldRender();
+		//engine.enablePhysicsWorldRender();
 
 		// ------------- positioning the camera -------------
 		(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0,0,5));
@@ -244,7 +270,6 @@ public class MyGame extends VariableFrameRateGame
 		
 		Camera c = (engine.getRenderSystem().getViewport("MAIN").getCamera());
 		orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
-
 	}
 
 	@Override
@@ -281,35 +306,38 @@ public class MyGame extends VariableFrameRateGame
 
 		if (joined) {
 
-    float wallThreshold = 1.0f;
-    float radiusOffset = 0.5f;
-    float stepSize = 0.05f;
-    float moveSpeed = 2f;
+			float wallThreshold = 1.0f;
+			float radiusOffset = 0.5f;
+			float stepSize = 0.05f;
+			float moveSpeed = 2f;
 
-    if (isMovingForward || isMovingBackward) {
-            Vector4f moveDirection = isMovingForward ?
-                new Vector4f(0f, 0f, 1f, 0f) :
-                new Vector4f(0f, 0f, -1f, 0f);
+			if (isMovingForward || isMovingBackward) {
+            	Vector4f moveDirection = isMovingForward ?
+                	new Vector4f(0f, 0f, 1f, 0f) :
+                	new Vector4f(0f, 0f, -1f, 0f);
 
-            moveDirection.mul(avatar.getWorldRotation());
+				moveDirection.mul(avatar.getWorldRotation());
 
-            Vector3f currPos = avatar.getWorldLocation();
-            Vector3f nextPos = new Vector3f(currPos.x() + moveDirection.x() * stepSize, 0, currPos.z() + moveDirection.z() * stepSize);
+				Vector3f currPos = avatar.getWorldLocation();
+				Vector3f nextPos = new Vector3f(currPos.x() + moveDirection.x() * stepSize, 0, currPos.z() + moveDirection.z() * stepSize);
 
-            float nextHeight = terrain.getHeight(nextPos.x(), nextPos.z());
+				float nextHeight = terrain.getHeight(nextPos.x(), nextPos.z());
 
-            if (nextHeight < wallThreshold) {
-                Matrix4f newTransform = new Matrix4f().translation(nextPos.x(), nextHeight + radiusOffset, nextPos.z());
+				if (nextHeight < wallThreshold) {
+					Matrix4f newTransform = new Matrix4f().translation(nextPos.x(), nextHeight + radiusOffset, nextPos.z());
 
-                avatar.getPhysicsObject().setTransform(toDoubleArray(newTransform.get(vals)));
+					avatar.getPhysicsObject().setTransform(toDoubleArray(newTransform.get(vals)));
 
-                avatar.getPhysicsObject().setLinearVelocity(new float[] { moveDirection.x() * moveSpeed, 0f, moveDirection.z() * moveSpeed });
-            } else {
-                avatar.getPhysicsObject().setLinearVelocity(new float[] { 0f, 0f, 0f });
-            }
-    } else {
-        avatar.getPhysicsObject().setLinearVelocity(new float[] { 0f, 0f, 0f });
-    }
+					avatar.getPhysicsObject().setLinearVelocity(new float[] { moveDirection.x() * moveSpeed, 0f, moveDirection.z() * moveSpeed });
+				} else {
+					avatar.getPhysicsObject().setLinearVelocity(new float[] { 0f, 0f, 0f });
+				}
+				protClient.sendMoveMessage(avatar.getWorldLocation(), 0.0f);
+			} else {
+				avatar.getPhysicsObject().setLinearVelocity(new float[] { 0f, 0f, 0f });
+			}
+
+			
 
 			// Tranlation of movements into physics
 			AxisAngle4f aa = new AxisAngle4f();
@@ -319,41 +347,39 @@ public class MyGame extends VariableFrameRateGame
 			checkForCollisions();
 			physicsEngine.update((float)elapsedTime);
 			for (GameObject go : engine.getSceneGraph().getGameObjects()){
-    if (go.getPhysicsObject() != null) { 
-        // set translation
-        mat.set(toFloatArray(go.getPhysicsObject().getTransform()));
-        mat2.set(3,0,mat.m30());
-        mat2.set(3,1,mat.m31());
-        mat2.set(3,2,mat.m32());
+				if (go.getPhysicsObject() != null) { 
+					// set translation
+					mat.set(toFloatArray(go.getPhysicsObject().getTransform()));
+					mat2.set(3,0,mat.m30());
+					mat2.set(3,1,mat.m31());
+					mat2.set(3,2,mat.m32());
 
-        // 🚨 ADD THIS WALL CHECK:
-        float goX = mat.m30();
-        float goZ = mat.m32();
-        float wallHeight = terrain.getHeight(goX, goZ);
+					// 🚨 ADD THIS WALL CHECK:
+					float goX = mat.m30();
+					float goZ = mat.m32();
+					float wallHeight = terrain.getHeight(goX, goZ);
 
-        if (wallHeight >= wallThreshold) {
-    float correctedY = wallHeight + radiusOffset;
+					if (wallHeight >= wallThreshold) {
+						float correctedY = wallHeight + radiusOffset;
 
-    mat2.set(3, 1, correctedY); // visually move the mesh
-    go.getPhysicsObject().setLinearVelocity(new float[] {0f, 0f, 0f}); // stop motion
+						mat2.set(3, 1, correctedY); // visually move the mesh
+						go.getPhysicsObject().setLinearVelocity(new float[] {0f, 0f, 0f}); // stop motion
 
-    // 🛠️ keep the physics body aligned!
-    Matrix4f physicsTransform = new Matrix4f().translation(goX, correctedY, goZ);
-    go.getPhysicsObject().setTransform(toDoubleArray(physicsTransform.get(vals)));
-}
+						// keep the physics body aligned!
+						Matrix4f physicsTransform = new Matrix4f().translation(goX, correctedY, goZ);
+						go.getPhysicsObject().setTransform(toDoubleArray(physicsTransform.get(vals)));
+					}
 
+					go.setLocalTranslation(mat2);
 
-        go.setLocalTranslation(mat2);
-
-        // set rotation
-        if (go != avatar) {
-            mat.getRotation(aa);
-            mat3.rotation(aa);
-            go.setLocalRotation(mat3);
-        }
-    }
-}
-
+					// set rotation
+					if (go != avatar) {
+						mat.getRotation(aa);
+						mat3.rotation(aa);
+						go.setLocalRotation(mat3);
+					}
+				}
+			}
 		}
 	}
 
@@ -401,6 +427,10 @@ public class MyGame extends VariableFrameRateGame
 				characterName = characterNames[selection];
 				joinGame(characterName);
 				break;
+			case KeyEvent.VK_SPACE:		//to start game. pacman starts the game
+				if (joined == true && characterName.equals("tageman")) {
+					startGame();
+				}
 		}
 		super.keyPressed(e);
 	}
@@ -437,6 +467,13 @@ public class MyGame extends VariableFrameRateGame
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.D, 
 											turnRightAction, 
 											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+	}
+
+	public void startGame() {
+		System.out.println("starting game");
+		Vector3f position = new Vector3f(0.0f, 0.0f, 5.0f);
+		System.out.println("creating npc ghost");
+		protClient.sendCreateNPCmessage(position);
 	}
 
 	public void setTagemanChomp(boolean moving) {
@@ -612,4 +649,7 @@ public class MyGame extends VariableFrameRateGame
 			}
 		}
 	}
+
+	public ObjShape getNPCshape() { return npcShape; }
+	public TextureImage getNPCtexture() { return npcTex; }
 }

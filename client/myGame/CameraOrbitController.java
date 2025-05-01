@@ -37,10 +37,6 @@ public class CameraOrbitController {
         OrbitAzimuthAction azmRightAction = new OrbitAzimuthAction(1);  //right arrow key
         OrbitAzimuthAction azmCenterAction = new OrbitAzimuthAction('C');
 
-        OrbitRadiusAction radiusAction = new OrbitRadiusAction();
-        OrbitRadiusAction radiusIncreaseAction = new OrbitRadiusAction(1);  //E key
-        OrbitRadiusAction radiusDecreaseAction = new OrbitRadiusAction(-1); //Q arrow key
-
         OrbitElevationAction elevationAction = new OrbitElevationAction();
         OrbitElevationAction elevationUpAction = new OrbitElevationAction(1);   //up arrow key
         OrbitElevationAction elevationDownAction = new OrbitElevationAction(-1);//down arrow key
@@ -51,9 +47,6 @@ public class CameraOrbitController {
             im.associateAction(gp, net.java.games.input.Component.Identifier.Axis.RX, 
                                                 azmAction, 
                                                 InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN); 
-            //im.associateAction(gp, net.java.games.input.Component.Identifier.Axis.RY, 
-                                                //radiusAction, 
-                                                //InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
             im.associateAction(gp, net.java.games.input.Component.Identifier.Axis.RY, 
                                                 elevationAction, 
                                                 InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
@@ -69,13 +62,6 @@ public class CameraOrbitController {
                                             azmCenterAction,
                                             InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 
-        im.associateAction(kb, net.java.games.input.Component.Identifier.Key.E,
-                                            radiusIncreaseAction,
-                                            InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-        im.associateAction(kb, net.java.games.input.Component.Identifier.Key.Q,
-                                            radiusDecreaseAction,
-                                            InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-
         im.associateAction(kb, net.java.games.input.Component.Identifier.Key.UP,
                                             elevationUpAction,
                                             InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
@@ -87,6 +73,7 @@ public class CameraOrbitController {
     }
 
     public void updateCameraPosition() {
+
         Vector3f avatarRot = avatar.getWorldForwardVector();
         double avatarAngle = Math.toDegrees((double) 
                                                 avatarRot.angleSigned(new Vector3f(0, 0, -1), 
@@ -103,6 +90,7 @@ public class CameraOrbitController {
                             "azimuth: " + cameraAzimuth + "\n" + 
                             "elevation: " + cameraElevation + "\n" + 
                             "radius: " + cameraRadius);*/
+        cameraAzimuth = 0;
     }
 
     private class OrbitAzimuthAction extends AbstractInputAction {
@@ -140,8 +128,9 @@ public class CameraOrbitController {
 
                         cameraAzimuth += rotAmount;
                     } else {
-                        rotAmount = 0.5f;
-                        cameraAzimuth += rotAmount * direction;
+                        //rotAmount = 0.5f;
+                        //cameraAzimuth += rotAmount * direction;
+                        cameraAzimuth = -90 * direction;
                     }     
             }
 

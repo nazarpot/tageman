@@ -19,6 +19,7 @@ public class MoveAction extends AbstractInputAction
     public MoveAction(MyGame g, ProtocolClient p, char direction) {
         game = g;
         protClient = p;
+        avatar = game.getAvatar();
         this.direction = direction;
         //F for forward
         //B for backward
@@ -33,10 +34,17 @@ public class MoveAction extends AbstractInputAction
             case 'F':
                 if (keyVal == 1.0f) {
                     game.setMovingForward(true);
-                    game.setTagemanChomp(true);
+                    if (game.getCharacterName().equals("tageman")) {
+                        game.setTagemanChomp(true);
+                        protClient.sendChompMessage(true);
+                    }
+                    
                 } else {
                     game.setMovingForward(false);
-                    game.setTagemanChomp(false);
+                    if (game.getCharacterName().equals("tageman")) {
+                        game.setTagemanChomp(false);    
+                        protClient.sendChompMessage(false);
+                    }
                 }
                 break;
             case 'B':

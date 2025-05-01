@@ -17,6 +17,7 @@ public class ProtocolClient extends GameConnectionClient
 	private MyGame game;
 	private GhostManager ghostManager;
 	private UUID id;
+	private GhostNPC ghostNPC;
 	
 	public ProtocolClient(InetAddress remoteAddr, int remotePort, ProtocolType protocolType, MyGame game) throws IOException 
 	{	super(remoteAddr, remotePort, protocolType);
@@ -114,6 +115,51 @@ public class ProtocolClient extends GameConnectionClient
 				
 				ghostManager.updateGhostAvatar(ghostID, ghostPosition, ghostRotation);
 			}
+
+			//to chomp or not to chomp
+			if (messageTokens[0].compareTo("chomp") == 0) {
+				Boolean toChomp = Boolean.parseBoolean(messageTokens[2]);
+				game.setTagemanChomp(toChomp);
+			}
+
+			// create ghost npc
+			if (messageTokens[0].compareTo("createNPC") == 0) {
+				Vector3f ghostPosition = new Vector3f(
+					Float.parseFloat(messageTokens[2]),
+					Float.parseFloat(messageTokens[3]),
+					Float.parseFloat(messageTokens[4])
+				);
+				try {
+					createGhostNPC(ghostPosition);
+				} catch (IOException e) {
+					System.out.println("error creating npc");
+				}
+				System.out.println("NPC created");
+			}
+
+			//NPC INFO
+			//update NPC location
+			if (messageTokens[0].compareTo("npcInfo") == 0) {
+				
+				// Parse out the position into a Vector3f
+				Vector3f ghostPosition = new Vector3f(
+					Float.parseFloat(messageTokens[1]),
+					Float.parseFloat(messageTokens[2]),
+					Float.parseFloat(messageTokens[3])
+				);
+				
+				ghostNPC.setPosition(ghostPosition);
+			}
+
+			//NPC to look at tageman
+			if (messageTokens[0].compareTo("lookAt") == 0) {
+				Vector3f tagemanPosition = new Vector3f(
+					Float.parseFloat(messageTokens[1]),
+					Float.parseFloat(messageTokens[2]),
+					Float.parseFloat(messageTokens[3])
+				);
+				ghostNPC.lookAtTageman(tagemanPosition);
+			}
 		}	
 	}
 	
@@ -193,12 +239,44 @@ public class ProtocolClient extends GameConnectionClient
 			message += "," + rotateBy;
 			
 			sendPacket(message);
-
-			System.out.println("character moved");
 		} catch (IOException e) 
 		{	
 			e.printStackTrace();
 		}	
 	}
 
+	public void sendChompMessage(boolean toChomp) {
+		try {
+			String message = new String("chomp," + id.toString());
+			message += "," + Boolean.toString(toChomp);
+			sendPacket(message);
+		} catch (IOException e) {
+			System.out.println("failure to update chomp");
+			e.printStackTrace();
+		}
+	}
+
+	// ---------------- Ghost section -------------------
+	public void sendCreateNPCmessage(Vector3f position) {
+		try {
+			createGhostNPC(position);
+			String message = new String("createNPC," + id.toString());
+			message += "," + position.x();
+			message += "," + position.y();
+			message += "," + position.z();
+
+			sendPacket(message);
+
+			System.out.println("created NPC");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+
+	private void createGhostNPC(Vector3f position) throws IOException {
+		if (ghostNPC == null) {
+			ghostNPC = new GhostNPC(0, game.getNPCshape(), game.getNPCtexture(), position);
+		}
+	}
 }
