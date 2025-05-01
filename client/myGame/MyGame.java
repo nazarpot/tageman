@@ -64,6 +64,7 @@ public class MyGame extends VariableFrameRateGame
 	private ProtocolType serverProtocol;
 	private ProtocolClient protClient;
 	private boolean isClientConnected = false, alreadyMoving = false, isMovingForward = false, isMovingBackward = false;
+	private boolean isGameOngoing = false;
 
 	private int mapWidth, mapHeight;
 
@@ -117,9 +118,7 @@ public class MyGame extends VariableFrameRateGame
 
 		// build dolphin in the center of the window
 		tageman = new GameObject(GameObject.root(), tageS, tageTX);
-		initialTranslation = new Matrix4f().translation(0f, .5f, -5f);
 		initialScale = (new Matrix4f()).scaling(.5f);
-		tageman.setLocalTranslation(initialTranslation);
 		tageman.setLocalScale(initialScale);
 		avatar = tageman;
 		avatarSelection.add(tageman);
@@ -422,13 +421,13 @@ public class MyGame extends VariableFrameRateGame
 				ghostS = avatar.getShape();
 				ghostT = avatar.getTextureImage();
 
-				tageman.getRenderStates().enableRendering();
+				//tageman.getRenderStates().enableRendering();
 
 				characterName = characterNames[selection];
 				joinGame(characterName);
 				break;
 			case KeyEvent.VK_SPACE:		//to start game. pacman starts the game
-				if (joined == true && characterName.equals("tageman")) {
+				if (joined == true && characterName.equals("tageman") && isGameOngoing) {
 					startGame();
 				}
 		}
@@ -474,6 +473,7 @@ public class MyGame extends VariableFrameRateGame
 		Vector3f position = new Vector3f(0.0f, 0.0f, 5.0f);
 		System.out.println("creating npc ghost");
 		protClient.sendCreateNPCmessage(position);
+		isGameOngoing = true;
 	}
 
 	public void setTagemanChomp(boolean moving) {

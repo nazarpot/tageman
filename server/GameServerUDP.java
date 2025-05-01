@@ -7,13 +7,20 @@ import tage.networking.server.IClientInfo;
 
 public class GameServerUDP extends GameConnectionServer<UUID> 
 {
-	NPCcontroller npcCtrl;
-	UUID tagemanID;
-	String[] tagemanLoc = new String[3];
+	private NPCcontroller npcCtrl;
+	private UUID tagemanID;
+	private String[] tagemanLoc = new String[3];
+	private boolean tageman, pinky, blinky, inky, clyde;
 
 	public GameServerUDP(int localPort, NPCcontroller npc) throws IOException 
 	{	super(localPort, ProtocolType.UDP);
 		npcCtrl = npc;
+
+		tageman = false;
+		pinky = false;
+		blinky = false;
+		inky = false;
+		clyde = false;
 	}
 
 	@Override
@@ -31,13 +38,21 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 					ci = getServerSocket().createClientInfo(senderIP, senderPort);
 					UUID clientID = UUID.fromString(messageTokens[1]);
 					String character = messageTokens[2];
-					addClient(ci, clientID);
-					System.out.println("Join request received from - " + clientID.toString());
-					sendJoinedMessage(clientID, character, true);
+					
+					if (checkAvailability(character)) {
+						addClient(ci, clientID);
+						System.out.println("Join request received from - " + clientID.toString());
+						sendJoinedMessage(clientID, character, true);
+					} else {
+						System.out.println("character taken, " + clientID.toString() + " not able to join");
+						sendTakenMessage(clientID);
+					}
+					
 
 					if (character.equals("tageman")) {
 						tagemanID = clientID;
 					}
+
 				} 
 				catch (IOException e) 
 				{	e.printStackTrace();
@@ -128,6 +143,43 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 		}
 	}
 
+	private boolean checkAvailability(String character) {
+		if (character.equals("tageman")) {
+			return tageman;
+		} else if (character.equals("blinky")) {
+			return blinky;
+		} else if (character.equals("pinky")) {
+			return pinky;
+		} else if (character.equals("inky")) {
+			return inky;
+		} else if (character.equals("clyde")) {
+			return clyde;
+		}
+		return false;
+	}
+
+	private void confirmCharacter(String character) {
+		if (character.equals("tageman")) {
+			tageman = true;
+		} else if (character.equals("blinky")) {
+			blinky = true;
+		} else if (character.equals("pinky")) {
+			pinky = true;
+		} else if (character.equals("inky")) {
+			inky = true;
+		} else if (character.equals("clyde")) {
+			clyde = true;
+		}
+	}
+
+	private void sendTakenMessage(UUID clientID) {
+		try {
+			String message = new String("taken");
+			sendPacket(message, clientID);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 	// Informs the client who just requested to join the server if their if their 
 	// request was able to be granted. 
 	// Message Format: (join,success) or (join,failure)
