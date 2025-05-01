@@ -1,6 +1,11 @@
 package myGame;
 
 import tage.*;
+import tage.audio.AudioResource;
+import tage.audio.AudioResourceType;
+import tage.audio.IAudioManager;
+import tage.audio.Sound;
+import tage.audio.SoundType;
 import tage.shapes.*;
 import tage.input.*;
 import tage.input.action.*;
@@ -22,6 +27,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import org.joml.*;
+
 
 import net.java.games.input.*;
 import net.java.games.input.Component.Identifier.*;
@@ -58,6 +64,9 @@ public class MyGame extends VariableFrameRateGame
 
 	private ObjShape npcShape;
 	private TextureImage npcTex;
+
+	private IAudioManager audioMgr;
+	private Sound hereSound, oceanSound;
 
 	private String serverAddress;
 	private int serverPort;
@@ -112,6 +121,24 @@ public class MyGame extends VariableFrameRateGame
 	}
 
 	@Override
+public void loadSounds()
+{ AudioResource resource1, resource2;
+audioMgr = engine.getAudioManager();
+resource1 = audioMgr.createAudioResource("start.wav", AudioResourceType.AUDIO_SAMPLE);
+//resource2 = audioMgr.createAudioResource("ocean.wav", AudioResourceType.AUDIO_SAMPLE);
+hereSound = new Sound(resource1, SoundType.SOUND_EFFECT, 100, false);
+//oceanSound = new Sound(resource2, SoundType.SOUND_EFFECT, 100, true);
+hereSound.initialize(audioMgr);
+//oceanSound.initialize(audioMgr);
+hereSound.setMaxDistance(10.0f);
+hereSound.setMinDistance(0.5f);
+hereSound.setRollOff(5.0f);
+//oceanSound.setMaxDistance(10.0f);
+//oceanSound.setMinDistance(0.5f);
+//oceanSound.setRollOff(5.0f);
+}
+
+	@Override
 	public void buildObjects()
 	{	Matrix4f initialTranslation, initialScale;
 
@@ -129,7 +156,7 @@ public class MyGame extends VariableFrameRateGame
 		initialScale = (new Matrix4f()).scaling(0.4f);
 		blinky.setLocalTranslation(initialTranslation);
 		blinky.setLocalScale(initialScale);
-		blinky.getRenderStates().disableRendering();
+		//blinky.getRenderStates().disableRendering();
 		avatarSelection.add(blinky);
 
 		pinky = new GameObject(GameObject.root(), pacmanGhostS, pinkyT);
@@ -191,14 +218,18 @@ public class MyGame extends VariableFrameRateGame
 		currFrameTime = System.currentTimeMillis();
 		elapsedTime = 0.0;
 		(engine.getRenderSystem()).setWindowDimensions(1900,1000);
+
+		hereSound.setLocation(tageman.getWorldLocation());
+setEarParameters();
+hereSound.play();
 		
 		// --- initialize physics system ---
-		float[] gravity = {0f, -1f, 0f};
+		float[] gravity = {0f, -5f, 0f};
 		physicsEngine = (engine.getSceneGraph()).getPhysicsEngine();
 		physicsEngine.setGravity(gravity);
 
 		// --- create physics world ---
-		float mass = 1.0f;
+		float mass = 10.0f;
 		float[] upVector = {0,1f,0};
 		float pelletRadius = 0.1f;
 		float tagemanRadius = .5f;
@@ -272,6 +303,12 @@ public class MyGame extends VariableFrameRateGame
 		orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
 	}
 
+	public void setEarParameters()
+{ Camera camera = (engine.getRenderSystem()).getViewport("MAIN").getCamera();
+audioMgr.getEar().setLocation(avatar.getWorldLocation());
+audioMgr.getEar().setOrientation(camera.getN(), new Vector3f(0.0f, 1.0f, 0.0f));
+}
+
 	@Override
 	public void update()
 	{
@@ -303,6 +340,10 @@ public class MyGame extends VariableFrameRateGame
 		light1.setLocation(avatarLoc);
 
 		tageS.updateAnimation();
+
+		// update sound
+hereSound.setLocation(tageman.getWorldLocation());
+setEarParameters();
 
 		if (joined) {
 
@@ -421,8 +462,6 @@ public class MyGame extends VariableFrameRateGame
 
 				ghostS = avatar.getShape();
 				ghostT = avatar.getTextureImage();
-
-				tageman.getRenderStates().enableRendering();
 
 				characterName = characterNames[selection];
 				joinGame(characterName);
