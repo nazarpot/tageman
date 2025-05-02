@@ -1,6 +1,11 @@
 package myGame;
 
 import tage.*;
+import tage.audio.AudioResource;
+import tage.audio.AudioResourceType;
+import tage.audio.IAudioManager;
+import tage.audio.Sound;
+import tage.audio.SoundType;
 import tage.shapes.*;
 import tage.input.*;
 import tage.input.action.*;
@@ -59,6 +64,9 @@ public class MyGame extends VariableFrameRateGame
 	private ObjShape npcShape;
 	private TextureImage npcTex;
 
+	private IAudioManager audioMgr;
+	private Sound hereSound, oceanSound;
+
 	private String serverAddress;
 	private int serverPort;
 	private ProtocolType serverProtocol;
@@ -116,12 +124,26 @@ public class MyGame extends VariableFrameRateGame
 	}
 
 	@Override
+	public void loadSounds(){ 
+		AudioResource resource1, resource2;
+		audioMgr = engine.getAudioManager();
+		resource1 = audioMgr.createAudioResource("start.wav", AudioResourceType.AUDIO_SAMPLE);
+		hereSound = new Sound(resource1, SoundType.SOUND_EFFECT, 10, false);
+		hereSound.initialize(audioMgr);
+		hereSound.setMaxDistance(10.0f);
+		hereSound.setMinDistance(0.5f);
+		hereSound.setRollOff(5.0f);
+	}
+
+	@Override
 	public void buildObjects()
 	{	Matrix4f initialTranslation, initialScale;
 
 		// build dolphin in the center of the window
 		tageman = new GameObject(GameObject.root(), tageS, tageTX);
+		initialTranslation = new Matrix4f().translation(0f, .5f, -5f);
 		initialScale = (new Matrix4f()).scaling(.5f);
+		tageman.setLocalTranslation(initialTranslation);
 		tageman.setLocalScale(initialScale);
 		avatar = tageman;
 		avatarSelection.add(tageman);
@@ -129,7 +151,7 @@ public class MyGame extends VariableFrameRateGame
 		blinky = new GameObject(GameObject.root(), pacmanGhostS, blinkyT);
 		initialScale = (new Matrix4f()).scaling(0.4f);
 		blinky.setLocalScale(initialScale);
-		blinky.getRenderStates().disableRendering();
+		//blinky.getRenderStates().disableRendering();
 		avatarSelection.add(blinky);
 
 		pinky = new GameObject(GameObject.root(), pacmanGhostS, pinkyT);
@@ -164,10 +186,11 @@ public class MyGame extends VariableFrameRateGame
 		pellet.setLocalTranslation(initialTranslation);
 		initialScale = (new Matrix4f()).scaling(.1f);
 		pellet.setLocalScale(initialScale);
-
+		
+		// Set ghost shape for NPC instantiation
 		npcShape = pacmanGhostS;
-
 	}
+
 
 	@Override
 	public void initializeLights()
@@ -187,89 +210,60 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void initializeGame()
-	{	lastFrameTime = System.currentTimeMillis();
+	{
+		lastFrameTime = System.currentTimeMillis();
 		currFrameTime = System.currentTimeMillis();
 		elapsedTime = 0.0;
-		(engine.getRenderSystem()).setWindowDimensions(1900,1000);
-		
+		(engine.getRenderSystem()).setWindowDimensions(1900, 1000);
+
+		// initial sound settings
+		hereSound.setLocation(tageman.getWorldLocation());
+		setEarParameters();
+		hereSound.play();
+
 		// --- initialize physics system ---
-		float[] gravity = {0f, -1f, 0f};
+		float[] gravity = {0f, -5f, 0f};
 		physicsEngine = (engine.getSceneGraph()).getPhysicsEngine();
 		physicsEngine.setGravity(gravity);
 
-		// --- create physics world ---
-		float mass = 1.0f;
-		float[] upVector = {0,1f,0};
-		float pelletRadius = 0.1f;
-		float tagemanRadius = .5f;
-		float tagemanHeight = .15f;
-		float ghostRadius = .4f;
-		float ghostHeight = .5f;
-		//float height = 2.0f;
-		double[ ] tempTransform;
+		// --- only add terrain and pellet physics now ---
+		float[] upVector = {0, 1f, 0};
+		double[] tempTransform;
 		float planeConstant = 0f;
-		
+		float pelletRadius = 0.1f;
+
 		Matrix4f translation = new Matrix4f(pellet.getLocalTranslation());
 		tempTransform = toDoubleArray(translation.get(vals));
 		pelletP = (engine.getSceneGraph()).addPhysicsSphere(0f, tempTransform, pelletRadius);
 		pelletP.setBounciness(0.8f);
 		pellet.setPhysicsObject(pelletP);
 
-		translation = new Matrix4f(tageman.getLocalTranslation());
-		tempTransform = toDoubleArray(translation.get(vals));
-		tageP = (engine.getSceneGraph()).addPhysicsCapsule(mass, tempTransform, tagemanRadius, tagemanHeight);
-		tageP.setBounciness(0.8f);
-		tageman.setPhysicsObject(tageP);
-		((JBulletPhysicsObject) tageP).getRigidBody().setAngularFactor(0f);
-
-		/*translation = new Matrix4f(blinky.getLocalTranslation());
-		tempTransform = toDoubleArray(translation.get(vals));
-		blinkyP = (engine.getSceneGraph()).addPhysicsCapsule(mass, tempTransform, ghostRadius, ghostHeight);
-		blinkyP.setBounciness(0.8f);
-		blinky.setPhysicsObject(blinkyP);
-		((JBulletPhysicsObject) blinkyP).getRigidBody().setAngularFactor(0f);*/
-
-		/*translation = new Matrix4f(pinky.getLocalTranslation());
-		tempTransform = toDoubleArray(translation.get(vals));
-		pinkyP = (engine.getSceneGraph()).addPhysicsCapsule(mass, tempTransform, ghostRadius, ghostHeight);
-		pinkyP.setBounciness(0.8f);
-		pinky.setPhysicsObject(pinkyP);
-		((JBulletPhysicsObject) pinkyP).getRigidBody().setAngularFactor(0f);
-
-		translation = new Matrix4f(inky.getLocalTranslation());
-		tempTransform = toDoubleArray(translation.get(vals));
-		inkyP = (engine.getSceneGraph()).addPhysicsCapsule(mass, tempTransform, ghostRadius, ghostHeight);
-		inkyP.setBounciness(0.8f);
-		inky.setPhysicsObject(inkyP);
-		((JBulletPhysicsObject) inkyP).getRigidBody().setAngularFactor(0f);
-
-		translation = new Matrix4f(clyde.getLocalTranslation());
-		tempTransform = toDoubleArray(translation.get(vals));
-		clydeP = (engine.getSceneGraph()).addPhysicsCapsule(mass, tempTransform, ghostRadius, ghostHeight);
-		clydeP.setBounciness(0.8f);
-		clyde.setPhysicsObject(clydeP);
-		((JBulletPhysicsObject) clydeP).getRigidBody().setAngularFactor(0f);*/
-
 		translation = new Matrix4f(terrain.getLocalTranslation());
 		tempTransform = toDoubleArray(translation.get(vals));
 		terrainP = (engine.getSceneGraph()).addPhysicsStaticPlane(tempTransform, upVector, planeConstant);
-		//caps1P.setBounciness(0.8f);
 		terrain.setPhysicsObject(terrainP);
 
+		initializeAvatarPhysics(blinky, 10f);
+
+		// ------------- camera setup -------------
+		(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0, 0, 5));
+		im = engine.getInputManager();
+		String gpName = im.getFirstGamepadName();
+		String keyboardName = im.getKeyboardName();
+		Camera c = (engine.getRenderSystem().getViewport("MAIN").getCamera());
+		orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
 
 		//setupNetworking();
 
 		//engine.disableGraphicsWorldRender();
-		//engine.enablePhysicsWorldRender();
+		engine.enablePhysicsWorldRender();
+	}
 
-		// ------------- positioning the camera -------------
-		(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0,0,5));
-		im = engine.getInputManager();
-		String gpName = im.getFirstGamepadName();
-		String keyboardName = im.getKeyboardName();
-		
-		Camera c = (engine.getRenderSystem().getViewport("MAIN").getCamera());
-		orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
+
+	public void setEarParameters(){ 
+		Camera camera = (engine.getRenderSystem()).getViewport("MAIN").getCamera();
+		audioMgr.getEar().setLocation(avatar.getWorldLocation());
+		audioMgr.getEar().setOrientation(camera.getN(), new Vector3f(0.0f, 1.0f, 0.0f));
 	}
 
 	@Override
@@ -301,6 +295,10 @@ public class MyGame extends VariableFrameRateGame
 		light1.setLocation(avatarLoc);
 
 		tageS.updateAnimation();
+
+		// update sound
+		hereSound.setLocation(tageman.getWorldLocation());
+		setEarParameters();
 
 		if (joined) {
 
@@ -428,6 +426,8 @@ public class MyGame extends VariableFrameRateGame
 	private void joinGame(String character) {
 		setupNetworking(character);
 
+		initializeAvatarPhysics(avatar, 10f);
+
 		//------------- INPUTS SECTION--------------------------
 		MoveAction fwdAction = new MoveAction(this, protClient, 'F');
 		MoveAction bkwdAction = new MoveAction(this, protClient, 'B');
@@ -530,7 +530,13 @@ public class MyGame extends VariableFrameRateGame
 			JBulletPhysicsObject obj1 = JBulletPhysicsObject.getJBulletPhysicsObject(object1);
 			JBulletPhysicsObject obj2 = JBulletPhysicsObject.getJBulletPhysicsObject(object2);
 
-			boolean tagemanHitPellet = (obj1 == tageP && obj2 == pelletP) || (obj1 == pelletP && obj2 == tageP);
+			int avatarUID = avatar.getPhysicsObject().getUID();
+			int pelletUID = pellet.getPhysicsObject().getUID();
+			
+			boolean tagemanHitPellet = (
+				(obj1.getUID() == avatarUID && obj2.getUID() == pelletUID) ||
+				(obj2.getUID() == avatarUID && obj1.getUID() == pelletUID)
+				);
 
 			for (int j = 0; j < manifold.getNumContacts(); j++) {
 				contactPoint = manifold.getContactPoint(j);
@@ -553,14 +559,14 @@ public class MyGame extends VariableFrameRateGame
 					// Direction from Blinky to Tageman
 					javax.vecmath.Vector3f bounceDirection = new javax.vecmath.Vector3f();
 					bounceDirection.sub(posTageman, posBlinky); // Tageman - Blinky
-					bounceDirection.normalize(); // unit vector
+					bounceDirection.normalize();
 
 					// Now apply impulse to both
 					javax.vecmath.Vector3f impulseToTageman = new javax.vecmath.Vector3f(bounceDirection);
-					impulseToTageman.scale(.5f); // moderate force
+					impulseToTageman.scale(.5f); //force
 
 					javax.vecmath.Vector3f impulseToBlinky = new javax.vecmath.Vector3f(bounceDirection);
-					impulseToBlinky.scale(-.5f); // opposite direction
+					impulseToBlinky.scale(-.5f); //opposite direction
 
 					((JBulletPhysicsObject) tageP).getRigidBody().applyCentralImpulse(impulseToTageman);
 					((JBulletPhysicsObject) blinkyP).getRigidBody().applyCentralImpulse(impulseToBlinky);
@@ -573,7 +579,36 @@ public class MyGame extends VariableFrameRateGame
 		}
 	}
 
-	
+	private void initializeAvatarPhysics(GameObject character, float mass) {
+		float radius = 0.5f;
+		float height = 0.15f;
+
+    	//Adjust shape if it's a ghost
+		if (character.getShape() == pacmanGhostS) {
+			radius = 0.4f;
+			height = 0.2f;
+		}
+
+		Matrix4f translation = new Matrix4f(character.getLocalTranslation());
+		double[] tempTransform = toDoubleArray(translation.get(vals));
+		PhysicsObject po = engine.getSceneGraph().addPhysicsCapsule(mass, tempTransform, radius, height);
+		po.setBounciness(0.8f);
+		character.setPhysicsObject(po);
+		((JBulletPhysicsObject) po).getRigidBody().setAngularFactor(0f);
+
+		// Assign named reference based on character
+		if (character == tageman) {
+			tageP = po;
+		} else if (character == blinky) {
+			blinkyP = po;
+		} else if (character == pinky) {
+			pinkyP = po;
+		} else if (character == inky) {
+			inkyP = po;
+		} else if (character == clyde) {
+			clydeP = po;
+		}
+	}
 
 	// ---------- NETWORKING SECTION ----------------
 
