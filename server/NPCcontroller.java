@@ -27,7 +27,7 @@ public class NPCcontroller {
         setupNPCs();
         setupBehaviorTree();
         Thread thread = new Thread(){
-            public void npcLoop() {
+            public void run() {
                 while (true) {
                     long currentTime = System.nanoTime();
                     float elapsedThinkMilliSecs = (currentTime - lastThinkUpdateTime)/(1000000.0f);

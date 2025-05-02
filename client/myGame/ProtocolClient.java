@@ -44,6 +44,7 @@ public class ProtocolClient extends GameConnectionClient
 				{	
 					System.out.println("join success confirmed");
 					game.setIsConnected(true);
+					game.confirmJoin();
 					String character = messageTokens[2];
 					sendCreateMessage(game.getPlayerPosition(), character);
 				}
@@ -51,6 +52,12 @@ public class ProtocolClient extends GameConnectionClient
 				{	System.out.println("join failure confirmed");
 					game.setIsConnected(false);
 			}	}
+
+			//if a character is taken
+			if (messageTokens[0].compareTo("taken") == 0) {
+				System.out.println("character is taken");
+				game.setHUD2string("character is taken");
+			}
 			
 			// Handle BYE message
 			// Format: (bye,remoteId)
@@ -179,9 +186,9 @@ public class ProtocolClient extends GameConnectionClient
 	// Informs the server that the client is leaving the server. 
 	// Message Format: (bye,localId)
 
-	public void sendByeMessage()
+	public void sendByeMessage(String character)
 	{	try 
-		{	sendPacket(new String("bye," + id.toString()));
+		{	sendPacket(new String("bye," + id.toString() + "," + character));
 		} catch (IOException e) 
 		{	e.printStackTrace();
 	}	}
