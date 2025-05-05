@@ -42,29 +42,32 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 					if (checkAvailability(character)) {
 						addClient(ci, clientID);
 						System.out.println("Join request received from - " + clientID.toString());
+						confirmCharacter(character);
 						sendJoinedMessage(clientID, character, true);
+
+						if (character.equals("tageman")) {
+							tagemanID = clientID;
+						}
 					} else {
 						System.out.println("character taken, " + clientID.toString() + " not able to join");
+						sendJoinedMessage(clientID, character, false);
 						sendTakenMessage(clientID);
 					}
-					
-
-					if (character.equals("tageman")) {
-						tagemanID = clientID;
-					}
-
 				} 
-				catch (IOException e) 
-				{	e.printStackTrace();
-			}	}
-			
+				catch (IOException e) {	
+					e.printStackTrace();
+				}		
+			}
+		
 			// BYE -- Case where clients leaves the server
 			// Received Message Format: (bye,localId)
 			if(messageTokens[0].compareTo("bye") == 0)
 			{	UUID clientID = UUID.fromString(messageTokens[1]);
+				String character = messageTokens[2];
 				System.out.println("Exit request received from - " + clientID.toString());
 				sendByeMessages(clientID);
 				removeClient(clientID);
+				freeCharacter(character);
 
 				if (clientID.equals(tagemanID)) {
 					tagemanID = null;
@@ -145,15 +148,15 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 
 	private boolean checkAvailability(String character) {
 		if (character.equals("tageman")) {
-			return tageman;
+			return !tageman;
 		} else if (character.equals("blinky")) {
-			return blinky;
+			return !blinky;
 		} else if (character.equals("pinky")) {
-			return pinky;
+			return !pinky;
 		} else if (character.equals("inky")) {
-			return inky;
+			return !inky;
 		} else if (character.equals("clyde")) {
-			return clyde;
+			return !clyde;
 		}
 		return false;
 	}
@@ -169,6 +172,20 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 			inky = true;
 		} else if (character.equals("clyde")) {
 			clyde = true;
+		}
+	}
+
+	private void freeCharacter(String character) {
+		if (character.equals("tageman")) {
+			tageman = false;
+		} else if (character.equals("blinky")) {
+			blinky = false;
+		} else if (character.equals("pinky")) {
+			pinky = false;
+		} else if (character.equals("inky")) {
+			inky = false;
+		} else if (character.equals("clyde")) {
+			clyde = false;
 		}
 	}
 

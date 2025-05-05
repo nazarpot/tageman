@@ -76,6 +76,9 @@ public class MyGame extends VariableFrameRateGame
 
 	private int mapWidth, mapHeight;
 
+	private String dispStr2 = new String("");
+	private Vector3f hud2Color = new Vector3f(0, 0, 1);
+
 	public MyGame(String serverAddress, int serverPort, String protocol) {
 		super();
 		gm = new GhostManager(this);
@@ -146,9 +149,7 @@ public class MyGame extends VariableFrameRateGame
 		avatarSelection.add(tageman);
 
 		blinky = new GameObject(GameObject.root(), pacmanGhostS, blinkyT);
-		initialTranslation = new Matrix4f().translation(5f, 1f, -5f);
 		initialScale = (new Matrix4f()).scaling(0.4f);
-		blinky.setLocalTranslation(initialTranslation);
 		blinky.setLocalScale(initialScale);
 		//blinky.getRenderStates().disableRendering();
 		avatarSelection.add(blinky);
@@ -308,9 +309,7 @@ public class MyGame extends VariableFrameRateGame
 		String elapsedTimeStr = Integer.toString(elapsedTimeSec);
 		String counterStr = Integer.toString(counter);
 		String dispStr1 = "Time = " + elapsedTimeStr;
-		String dispStr2 = "Keyboard hits = " + counterStr;
 		Vector3f hud1Color = new Vector3f(1,0,0);
-		Vector3f hud2Color = new Vector3f(0,0,1);
 		(engine.getHUDmanager()).setHUD1(dispStr1, hud1Color, 15, 15);
 		(engine.getHUDmanager()).setHUD2(dispStr2, hud2Color, 500, 15);
 
@@ -419,24 +418,18 @@ public class MyGame extends VariableFrameRateGame
 				}
 				break;
 			case KeyEvent.VK_ENTER:
-				joined = true;
-				avatar.setLocalTranslation((new Matrix4f()).translation(0, 1, 0));
+				characterName = characterNames[selection];
+				joinGame(characterName);
 
-				im = engine.getInputManager();
+				/*im = engine.getInputManager();
 				String gpName = im.getFirstGamepadName();
 				String keyboardName = im.getKeyboardName();
 		
 				Camera c = (engine.getRenderSystem().getViewport("MAIN").getCamera());
-				orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
-
-				ghostS = avatar.getShape();
-				ghostT = avatar.getTextureImage();
-
-				characterName = characterNames[selection];
-				joinGame(characterName);
+				orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);*/
 				break;
 			case KeyEvent.VK_SPACE:		//to start game. pacman starts the game
-				if (joined == true && characterName.equals("tageman") && isGameOngoing) {
+				if (joined == true && characterName.equals("tageman") && !isGameOngoing) {
 					startGame();
 				}
 			case KeyEvent.VK_G:
@@ -484,6 +477,14 @@ public class MyGame extends VariableFrameRateGame
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.D, 
 											turnRightAction, 
 											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+	}
+
+	public void confirmJoin() {
+		joined = true;
+		avatar.setLocalTranslation((new Matrix4f()).translation(0, 1, 0));
+
+		ghostS = avatar.getShape();
+		ghostT = avatar.getTextureImage();
 	}
 
 	public void startGame() {
@@ -561,9 +562,10 @@ public class MyGame extends VariableFrameRateGame
 		dynamicsWorld = ((JBulletPhysicsEngine)physicsEngine).getDynamicsWorld();
 		dispatcher = dynamicsWorld.getDispatcher();
 		int manifoldCount = dispatcher.getNumManifolds();
-		for (int i=0; i<manifoldCount; i++) {
+		for (int i=0; i<2; i++) {
 			manifold = dispatcher.getManifoldByIndexInternal(i);
-			object1 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody0();
+			if (manifold != null) {
+				object1 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody0();
 			object2 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody1();
 			JBulletPhysicsObject obj1 = JBulletPhysicsObject.getJBulletPhysicsObject(object1);
 			JBulletPhysicsObject obj2 = JBulletPhysicsObject.getJBulletPhysicsObject(object2);
@@ -612,6 +614,8 @@ public class MyGame extends VariableFrameRateGame
 					System.out.println("Tageman and Blinky bounced!");
 				}
 			}
+			}
+			
 		}
 	}
 
@@ -710,7 +714,7 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void shutdown() {
 		super.shutdown();
-		protClient.sendByeMessage();
+		protClient.sendByeMessage(characterName);
 	}
 	
 	private class SendCloseConnectionPacketAction extends AbstractInputAction
@@ -718,11 +722,13 @@ public class MyGame extends VariableFrameRateGame
 		public void performAction(float time, net.java.games.input.Event evt) 
 		{	if(protClient != null && isClientConnected == true)
 			{	
-				protClient.sendByeMessage();
+				protClient.sendByeMessage(characterName);
 			}
 		}
 	}
 
 	public ObjShape getNPCshape() { return npcShape; }
 	public TextureImage getNPCtexture() { return npcTex; }
+
+	public void setHUD2string(String s) {dispStr2 = s;}
 }
