@@ -76,8 +76,8 @@ public class MyGame extends VariableFrameRateGame
 
 	private int mapWidth, mapHeight;
 
-	private String dispStr2 = new String("");
-	private Vector3f hud2Color = new Vector3f(0, 0, 1);
+	private String dispStr2 = new String("choose character");
+	private Vector3f hud2Color = new Vector3f(0, 1, 0);
 
 	public MyGame(String serverAddress, int serverPort, String protocol) {
 		super();
@@ -151,7 +151,7 @@ public class MyGame extends VariableFrameRateGame
 		blinky = new GameObject(GameObject.root(), pacmanGhostS, blinkyT);
 		initialScale = (new Matrix4f()).scaling(0.4f);
 		blinky.setLocalScale(initialScale);
-		//blinky.getRenderStates().disableRendering();
+		blinky.getRenderStates().disableRendering();
 		avatarSelection.add(blinky);
 
 		pinky = new GameObject(GameObject.root(), pacmanGhostS, pinkyT);
@@ -243,7 +243,7 @@ public class MyGame extends VariableFrameRateGame
 		terrainP = (engine.getSceneGraph()).addPhysicsStaticPlane(tempTransform, upVector, planeConstant);
 		terrain.setPhysicsObject(terrainP);
 
-		initializeAvatarPhysics(blinky, 10f);
+		//initializeAvatarPhysics(blinky, 10f);
 
 		// ------------- camera setup -------------
 		(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0, 0, 5));
@@ -256,7 +256,7 @@ public class MyGame extends VariableFrameRateGame
 		//setupNetworking();
 
 		//engine.disableGraphicsWorldRender();
-		engine.enablePhysicsWorldRender();
+		//engine.enablePhysicsWorldRender();
 	}
 
 
@@ -408,12 +408,12 @@ public class MyGame extends VariableFrameRateGame
 				characterName = characterNames[selection];
 				joinGame(characterName);
 
-				/*im = engine.getInputManager();
+				im = engine.getInputManager();
 				String gpName = im.getFirstGamepadName();
 				String keyboardName = im.getKeyboardName();
-		
 				Camera c = (engine.getRenderSystem().getViewport("MAIN").getCamera());
-				orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);*/
+				orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
+					
 				break;
 			case KeyEvent.VK_SPACE:		//to start game. pacman starts the game
 				if (joined == true && characterName.equals("tageman") && !isGameOngoing) {
@@ -465,11 +465,13 @@ public class MyGame extends VariableFrameRateGame
 
 		ghostS = avatar.getShape();
 		ghostT = avatar.getTextureImage();
+
+		dispStr2 = "";
 	}
 
 	public void startGame() {
 		System.out.println("starting game");
-		Vector3f position = new Vector3f(0.0f, 0.0f, 5.0f);
+		Vector3f position = new Vector3f(0.0f, 1.0f, 5.0f);
 		System.out.println("creating npc ghost");
 		protClient.sendCreateNPCmessage(position);
 		isGameOngoing = true;
@@ -579,7 +581,7 @@ public class MyGame extends VariableFrameRateGame
 		}
 	}
 
-	private void initializeAvatarPhysics(GameObject character, float mass) {
+	public void initializeAvatarPhysics(GameObject character, float mass) {
 		float radius = 0.5f;
 		float height = 0.15f;
 
@@ -642,18 +644,18 @@ public class MyGame extends VariableFrameRateGame
 
 	private void setupNetworking(String character)
 	{	isClientConnected = false;	
-		try 
-		{	protClient = new ProtocolClient(InetAddress.getByName(serverAddress), serverPort, serverProtocol, this);
-		} 	catch (UnknownHostException e) 
-		{	e.printStackTrace();
-		}	catch (IOException e) 
-		{	e.printStackTrace();
-		}
-		if (protClient == null)
-		{	System.out.println("missing protocol host");
-		}
-		else
-		{	// Send the initial join message with a unique identifier for this client
+		try {	
+			if (protClient == null) {
+				protClient = new ProtocolClient(InetAddress.getByName(serverAddress), serverPort, serverProtocol, this);
+			}
+		} 	catch (UnknownHostException e) {	
+			e.printStackTrace();
+		}	catch (IOException e) {	
+			e.printStackTrace();
+		} 
+		if (protClient == null) {	
+			System.out.println("missing protocol host");
+		} else {	// Send the initial join message with a unique identifier for this client
 			System.out.println("sending join message to protocol host");
 			protClient.sendJoinMessage(character);
 		}
@@ -661,8 +663,9 @@ public class MyGame extends VariableFrameRateGame
 	
 	protected void processNetworking(float elapsTime)
 	{	// Process packets received by the client from the server
-		if (protClient != null)
+		if (protClient != null) {
 			protClient.processPackets();
+		}
 	}
 
 	public Vector3f getPlayerPosition() { return avatar.getWorldLocation(); }
@@ -674,7 +677,9 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void shutdown() {
 		super.shutdown();
-		protClient.sendByeMessage(characterName);
+		if (protClient != null) {
+			protClient.sendByeMessage(characterName);
+		}
 	}
 	
 	private class SendCloseConnectionPacketAction extends AbstractInputAction

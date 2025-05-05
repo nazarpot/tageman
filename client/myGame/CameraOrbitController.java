@@ -91,6 +91,7 @@ public class CameraOrbitController {
                             "elevation: " + cameraElevation + "\n" + 
                             "radius: " + cameraRadius);*/
         cameraAzimuth = 0;
+        cameraElevation = 10;
     }
 
     private class OrbitAzimuthAction extends AbstractInputAction {
@@ -122,14 +123,8 @@ public class CameraOrbitController {
                     break;
                 default:
                     if (isController) {
-                        if (event.getValue() < -0.2) {rotAmount = -0.5f;}
-                        else if (event.getValue() > 0.2) {rotAmount = 0.5f;}
-                        else {rotAmount = 0.0f;}
-
-                        cameraAzimuth += rotAmount;
+                        cameraAzimuth += -90 * event.getValue();
                     } else {
-                        //rotAmount = 0.5f;
-                        //cameraAzimuth += rotAmount * direction;
                         cameraAzimuth = -90 * direction;
                     }     
             }
@@ -192,7 +187,7 @@ public class CameraOrbitController {
                 else if (event.getValue() > 0.2) {elevChange = 0.5f;}
                 else {elevChange = 0.0f;}
             } else {
-                elevChange = 0.5f * direction;
+                elevChange = 155;
             }
             
             cameraElevation += elevChange;

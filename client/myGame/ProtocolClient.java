@@ -178,7 +178,7 @@ public class ProtocolClient extends GameConnectionClient
 	public void sendJoinMessage(String character)
 	{	try 
 		{	sendPacket(new String("join," + id.toString() + "," + character));
-			System.out.println("client joined server");
+			System.out.println("client requesting to join server");
 		} catch (IOException e) 
 		{	e.printStackTrace();
 	}	}

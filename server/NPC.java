@@ -9,14 +9,14 @@ public class NPC {
 
     public NPC() {
         locationX = 0.0;
-        locationY = 0.0;
+        locationY = 1.0;
         locationZ = 0.0;
         target = new Vector3f(0.0f, 0.0f, 0.0f);
     }
 
     public void randomizeLocation(int seedX, int seedZ) {
         locationX = ((double) seedX)/4.0-5.0;
-        locationY = 0.0;
+        locationY = 1.0;
         locationZ = -2;
     }
 

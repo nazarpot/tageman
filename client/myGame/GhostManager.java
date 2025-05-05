@@ -27,6 +27,7 @@ public class GhostManager
 		Matrix4f initialScale = (new Matrix4f()).scaling(0.5f);
 		newAvatar.setLocalScale(initialScale);
 		ghostAvatars.add(newAvatar);
+		//game.initializeAvatarPhysics(newAvatar, 10f);
 		System.out.println("added ghost");
 	}
 	
@@ -57,7 +58,8 @@ public class GhostManager
 	{	GhostAvatar ghostAvatar = findAvatar(id);
 
 		if (ghostAvatar != null)
-		{	ghostAvatar.setPosition(position);
+		{	
+			ghostAvatar.setPosition(position);
 			ghostAvatar.setRotation(rotateBy);
 		}
 		else
