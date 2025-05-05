@@ -58,7 +58,7 @@ public class MyGame extends VariableFrameRateGame
 	private AnimatedShape tageS;
 	private Light light1;
 	private PhysicsEngine physicsEngine;
-	private PhysicsObject pelletP, tageP, blinkyP, pinkyP, inkyP, clydeP, terrainP;
+	private PhysicsObject pelletP, tageP, blinkyP, pinkyP, inkyP, clydeP, terrainP, wall1, wall2, wall3, wall4, wall5, gate;
 	private float vals[] = new float[16], bounceCooldown;
 
 	private ObjShape npcShape;
@@ -72,7 +72,7 @@ public class MyGame extends VariableFrameRateGame
 	private ProtocolType serverProtocol;
 	private ProtocolClient protClient;
 	private boolean isClientConnected = false, alreadyMoving = false, isMovingForward = false, isMovingBackward = false;
-	private boolean isGameOngoing = false;
+	private boolean isGameOngoing = false, isGateOpen = false;
 
 	private int mapWidth, mapHeight;
 
@@ -244,6 +244,31 @@ public class MyGame extends VariableFrameRateGame
 
 		initializeAvatarPhysics(blinky, 10f);
 
+		float[] wall1S = {26.5f, 3.5f, 1.75f};//{width (X), height (Y), depth (Z)}
+		float[] wall2S = {1.75f, 3.5f, 12f};
+		float[] wall3S = {1.75f, 3.5f, 12f};
+		float[] wall4S = {9.5f, 3.5f, 1.5f};
+		float[] wall5S = {9f, 3.5f, 1.5f};
+		float[] gateS = {9f, 3.5f, 1.5f};
+		Matrix4f wall1T = new Matrix4f().translation(0f, 2f, 3.25f);//position
+		Matrix4f wall2T = new Matrix4f().translation(12.5f, 2f, -3f);
+		Matrix4f wall3T = new Matrix4f().translation(-12.5f, 2f, -3f);
+		Matrix4f wall4T = new Matrix4f().translation(8.75f, 2f, -9.75f);
+		Matrix4f wall5T = new Matrix4f().translation(-8.75f, 2f, -9.75f);
+		Matrix4f gateT = new Matrix4f().translation(0f, 2f, -9.75f);
+		double[] transformArray = toDoubleArray(wall1T.get(vals));
+		wall1 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall1S);
+		transformArray = toDoubleArray(wall2T.get(vals));
+		wall2 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall2S);
+		transformArray = toDoubleArray(wall3T.get(vals));
+		wall3 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall3S);
+		transformArray = toDoubleArray(wall4T.get(vals));
+		wall4 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall4S);
+		transformArray = toDoubleArray(wall5T.get(vals));
+		wall5 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall5S);
+		transformArray = toDoubleArray(gateT.get(vals));
+		gate = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, gateS);
+
 		// ------------- camera setup -------------
 		(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0, 0, 5));
 		im = engine.getInputManager();
@@ -255,7 +280,7 @@ public class MyGame extends VariableFrameRateGame
 		//setupNetworking();
 
 		//engine.disableGraphicsWorldRender();
-		engine.enablePhysicsWorldRender();
+		//engine.enablePhysicsWorldRender();
 	}
 
 
@@ -302,74 +327,61 @@ public class MyGame extends VariableFrameRateGame
 		setEarParameters();
 
 		if (joined) {
-
-			float wallThreshold = 1.0f;
 			float radiusOffset = 0.5f;
 			float stepSize = 0.05f;
 			float moveSpeed = 2f;
-
+		
 			if (isMovingForward || isMovingBackward) {
-            	Vector4f moveDirection = isMovingForward ?
-                	new Vector4f(0f, 0f, 1f, 0f) :
-                	new Vector4f(0f, 0f, -1f, 0f);
-
+				Vector4f moveDirection = isMovingForward ?
+					new Vector4f(0f, 0f, 1f, 0f) :
+					new Vector4f(0f, 0f, -1f, 0f);
+		
 				moveDirection.mul(avatar.getWorldRotation());
-
+		
 				Vector3f currPos = avatar.getWorldLocation();
-				Vector3f nextPos = new Vector3f(currPos.x() + moveDirection.x() * stepSize, 0, currPos.z() + moveDirection.z() * stepSize);
-
-				float nextHeight = terrain.getHeight(nextPos.x(), nextPos.z());
-
-				if (nextHeight < wallThreshold) {
-					Matrix4f newTransform = new Matrix4f().translation(nextPos.x(), nextHeight + radiusOffset, nextPos.z());
-
-					avatar.getPhysicsObject().setTransform(toDoubleArray(newTransform.get(vals)));
-
-					avatar.getPhysicsObject().setLinearVelocity(new float[] { moveDirection.x() * moveSpeed, 0f, moveDirection.z() * moveSpeed });
-				} else {
-					avatar.getPhysicsObject().setLinearVelocity(new float[] { 0f, 0f, 0f });
-				}
+				Vector3f nextPos = new Vector3f(
+					currPos.x() + moveDirection.x() * stepSize,
+					currPos.y(),
+					currPos.z() + moveDirection.z() * stepSize
+				);
+		
+				Matrix4f newTransform = new Matrix4f().translation(
+					nextPos.x(), currPos.y(), nextPos.z()
+				);
+		
+				avatar.getPhysicsObject().setTransform(toDoubleArray(newTransform.get(vals)));
+				avatar.getPhysicsObject().setLinearVelocity(new float[] {
+					moveDirection.x() * moveSpeed,
+					0f,
+					moveDirection.z() * moveSpeed
+				});
+				
 				protClient.sendMoveMessage(avatar.getWorldLocation(), 0.0f);
 			} else {
 				avatar.getPhysicsObject().setLinearVelocity(new float[] { 0f, 0f, 0f });
 			}
-
-			
-
-			// Tranlation of movements into physics
+		
+			// Physics and visual sync
 			AxisAngle4f aa = new AxisAngle4f();
 			Matrix4f mat = new Matrix4f();
 			Matrix4f mat2 = new Matrix4f().identity();
 			Matrix4f mat3 = new Matrix4f().identity();
+		
 			checkForCollisions();
 			physicsEngine.update((float)elapsedTime);
-			for (GameObject go : engine.getSceneGraph().getGameObjects()){
-				if (go.getPhysicsObject() != null) { 
-					// set translation
+		
+			for (GameObject go : engine.getSceneGraph().getGameObjects()) {
+				if (go.getPhysicsObject() != null) {
+					// Get transform from physics
 					mat.set(toFloatArray(go.getPhysicsObject().getTransform()));
-					mat2.set(3,0,mat.m30());
-					mat2.set(3,1,mat.m31());
-					mat2.set(3,2,mat.m32());
-
-					// 🚨 ADD THIS WALL CHECK:
-					float goX = mat.m30();
-					float goZ = mat.m32();
-					float wallHeight = terrain.getHeight(goX, goZ);
-
-					if (wallHeight >= wallThreshold) {
-						float correctedY = wallHeight + radiusOffset;
-
-						mat2.set(3, 1, correctedY); // visually move the mesh
-						go.getPhysicsObject().setLinearVelocity(new float[] {0f, 0f, 0f}); // stop motion
-
-						// keep the physics body aligned!
-						Matrix4f physicsTransform = new Matrix4f().translation(goX, correctedY, goZ);
-						go.getPhysicsObject().setTransform(toDoubleArray(physicsTransform.get(vals)));
-					}
-
+		
+					// Set translation visually
+					mat2.set(3, 0, mat.m30());
+					mat2.set(3, 1, mat.m31());
+					mat2.set(3, 2, mat.m32());
 					go.setLocalTranslation(mat2);
-
-					// set rotation
+		
+					// Set rotation if not player avatar
 					if (go != avatar) {
 						mat.getRotation(aa);
 						mat3.rotation(aa);
@@ -379,6 +391,7 @@ public class MyGame extends VariableFrameRateGame
 			}
 		}
 	}
+		
 
 	@Override
 	public void keyPressed(KeyEvent e)
@@ -426,6 +439,13 @@ public class MyGame extends VariableFrameRateGame
 				if (joined == true && characterName.equals("tageman") && isGameOngoing) {
 					startGame();
 				}
+			case KeyEvent.VK_G:
+				if (isGateOpen) {
+					closeGate();
+				} else {
+					openGate();
+				}
+				break;
 		}
 		super.keyPressed(e);
 	}
@@ -492,6 +512,26 @@ public class MyGame extends VariableFrameRateGame
 	}
 
 	// ------------------ UTILITY FUNCTIONS used by physics
+	public void openGate() {
+		if (gate != null) {
+			physicsEngine.removeObject(gate.getUID());
+			gate = null;
+			System.out.println("Gate opened");
+		}
+		isGateOpen = true;
+	}
+
+	public void closeGate() {
+		if (gate == null) {
+			Matrix4f gateT = new Matrix4f().translation(0f, 2f, -9.75f);
+			float[] gateSize = new float[] {9f, 3.5f, 1.5f};
+			double[] transformArray = toDoubleArray(gateT.get(vals));
+			gate = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, gateSize);
+			System.out.println("Gate closed");
+		}
+		isGateOpen = false;
+	}
+
 	private float[] toFloatArray(double[] arr) {
 		if (arr == null) return null;
 		int n = arr.length;
