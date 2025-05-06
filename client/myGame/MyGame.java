@@ -139,11 +139,8 @@ public class MyGame extends VariableFrameRateGame
 	public void buildObjects()
 	{	Matrix4f initialTranslation, initialScale;
 
-		// build dolphin in the center of the window
 		tageman = new GameObject(GameObject.root(), tageS, tageTX);
-		initialTranslation = new Matrix4f().translation(0f, .5f, -5f);
 		initialScale = (new Matrix4f()).scaling(.5f);
-		tageman.setLocalTranslation(initialTranslation);
 		tageman.setLocalScale(initialScale);
 		avatar = tageman;
 		avatarSelection.add(tageman);
@@ -245,30 +242,7 @@ public class MyGame extends VariableFrameRateGame
 
 		initializeAvatarPhysics(blinky, 10f);
 
-		float[] wall1S = {26.5f, 3.5f, 1.75f};//{width (X), height (Y), depth (Z)}
-		float[] wall2S = {1.75f, 3.5f, 12f};
-		float[] wall3S = {1.75f, 3.5f, 12f};
-		float[] wall4S = {9.5f, 3.5f, 1.5f};
-		float[] wall5S = {9f, 3.5f, 1.5f};
-		float[] gateS = {9f, 3.5f, 1.5f};
-		Matrix4f wall1T = new Matrix4f().translation(0f, 2f, 3.25f);//position
-		Matrix4f wall2T = new Matrix4f().translation(12.5f, 2f, -3f);
-		Matrix4f wall3T = new Matrix4f().translation(-12.5f, 2f, -3f);
-		Matrix4f wall4T = new Matrix4f().translation(8.75f, 2f, -9.75f);
-		Matrix4f wall5T = new Matrix4f().translation(-8.75f, 2f, -9.75f);
-		Matrix4f gateT = new Matrix4f().translation(0f, 2f, -9.75f);
-		double[] transformArray = toDoubleArray(wall1T.get(vals));
-		wall1 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall1S);
-		transformArray = toDoubleArray(wall2T.get(vals));
-		wall2 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall2S);
-		transformArray = toDoubleArray(wall3T.get(vals));
-		wall3 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall3S);
-		transformArray = toDoubleArray(wall4T.get(vals));
-		wall4 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall4S);
-		transformArray = toDoubleArray(wall5T.get(vals));
-		wall5 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall5S);
-		transformArray = toDoubleArray(gateT.get(vals));
-		gate = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, gateS);
+		initilializeMazeWalls();
 
 		// ------------- camera setup -------------
 		(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0, 0, 5));
@@ -281,7 +255,7 @@ public class MyGame extends VariableFrameRateGame
 		//setupNetworking();
 
 		//engine.disableGraphicsWorldRender();
-		//engine.enablePhysicsWorldRender();
+		engine.enablePhysicsWorldRender();
 	}
 
 
@@ -421,12 +395,12 @@ public class MyGame extends VariableFrameRateGame
 				characterName = characterNames[selection];
 				joinGame(characterName);
 
-				/*im = engine.getInputManager();
+				im = engine.getInputManager();
 				String gpName = im.getFirstGamepadName();
 				String keyboardName = im.getKeyboardName();
 		
 				Camera c = (engine.getRenderSystem().getViewport("MAIN").getCamera());
-				orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);*/
+				orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
 				break;
 			case KeyEvent.VK_SPACE:		//to start game. pacman starts the game
 				if (joined == true && characterName.equals("tageman") && !isGameOngoing) {
@@ -445,6 +419,8 @@ public class MyGame extends VariableFrameRateGame
 
 	private void joinGame(String character) {
 		setupNetworking(character);
+
+		avatar.setLocalTranslation(new Matrix4f().translation(0, .5f, -5f));
 
 		initializeAvatarPhysics(avatar, 10f);
 
@@ -481,8 +457,7 @@ public class MyGame extends VariableFrameRateGame
 
 	public void confirmJoin() {
 		joined = true;
-		avatar.setLocalTranslation((new Matrix4f()).translation(0, 1, 0));
-
+		avatar.setLocalTranslation((new Matrix4f()).translation(0, 1, -5));
 		ghostS = avatar.getShape();
 		ghostT = avatar.getTextureImage();
 	}
@@ -513,6 +488,32 @@ public class MyGame extends VariableFrameRateGame
 	}
 
 	// ------------------ UTILITY FUNCTIONS used by physics
+	public void initilializeMazeWalls() {
+		float[] wall1S = {26.5f, 3.5f, 1.75f};//{width (X), height (Y), depth (Z)}
+		float[] wall2S = {1.75f, 3.5f, 12f};
+		float[] wall3S = {1.75f, 3.5f, 12f};
+		float[] wall4S = {9.5f, 3.5f, 1.5f};
+		float[] wall5S = {9f, 3.5f, 1.5f};
+		float[] gateS = {9f, 3.5f, 1.5f};
+		Matrix4f wall1T = new Matrix4f().translation(0f, 2f, 3.25f);//position
+		Matrix4f wall2T = new Matrix4f().translation(12.5f, 2f, -3f);
+		Matrix4f wall3T = new Matrix4f().translation(-12.5f, 2f, -3f);
+		Matrix4f wall4T = new Matrix4f().translation(8.75f, 2f, -9.75f);
+		Matrix4f wall5T = new Matrix4f().translation(-8.75f, 2f, -9.75f);
+		Matrix4f gateT = new Matrix4f().translation(0f, 2f, -9.75f);
+		double[] transformArray = toDoubleArray(wall1T.get(vals));
+		wall1 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall1S);
+		transformArray = toDoubleArray(wall2T.get(vals));
+		wall2 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall2S);
+		transformArray = toDoubleArray(wall3T.get(vals));
+		wall3 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall3S);
+		transformArray = toDoubleArray(wall4T.get(vals));
+		wall4 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall4S);
+		transformArray = toDoubleArray(wall5T.get(vals));
+		wall5 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall5S);
+		transformArray = toDoubleArray(gateT.get(vals));
+		gate = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, gateS);
+	}
 	public void openGate() {
 		if (gate != null) {
 			physicsEngine.removeObject(gate.getUID());
