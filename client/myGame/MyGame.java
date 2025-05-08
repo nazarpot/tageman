@@ -58,8 +58,9 @@ public class MyGame extends VariableFrameRateGame
 	private AnimatedShape tageS;
 	private Light light1;
 	private PhysicsEngine physicsEngine;
-	private PhysicsObject pelletP, tageP, blinkyP, pinkyP, inkyP, clydeP, terrainP, wall1, wall2, wall3, wall4, wall5, gate;
-	private float vals[] = new float[16], bounceCooldown;
+	private PhysicsObject pelletP, tageP, blinkyP, pinkyP, inkyP, clydeP, terrainP;
+	private PhysicsObject wall1, wall2, wall3, wall4, wall5, wall6, wall7, wall8, wall9, wall10, wall11, wall12, wall13, wall14, wall15, wall16, wall17, wall18, wall19, wall20, wall21, wall22, wall23, wall24, wall25, wall26, wall27, wall28, wall29, wall30, wall31, wall32, wall33, wall34, wall35, wall36, wall37, wall38, wall39, wall40, wall41, wall42, gate;
+	private float vals[] = new float[16];
 
 	private ObjShape npcShape;
 	private TextureImage npcTex;
@@ -242,7 +243,7 @@ public class MyGame extends VariableFrameRateGame
 
 		initializeAvatarPhysics(blinky, 10f);
 
-		initilializeMazeWalls();
+		initilializeWallPhysics();
 
 		// ------------- camera setup -------------
 		(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0, 0, 5));
@@ -255,11 +256,11 @@ public class MyGame extends VariableFrameRateGame
 		//setupNetworking();
 
 		//engine.disableGraphicsWorldRender();
-		engine.enablePhysicsWorldRender();
+		//engine.enablePhysicsWorldRender();
 	}
 
 
-	public void setEarParameters(){ 
+	public void setEarParameters(){
 		Camera camera = (engine.getRenderSystem()).getViewport("MAIN").getCamera();
 		audioMgr.getEar().setLocation(avatar.getWorldLocation());
 		audioMgr.getEar().setOrientation(camera.getN(), new Vector3f(0.0f, 1.0f, 0.0f));
@@ -420,7 +421,7 @@ public class MyGame extends VariableFrameRateGame
 	private void joinGame(String character) {
 		setupNetworking(character);
 
-		avatar.setLocalTranslation(new Matrix4f().translation(0, .5f, -5f));
+		avatar.setLocalTranslation(new Matrix4f().translation(0f, .5f, -5f));
 
 		initializeAvatarPhysics(avatar, 10f);
 
@@ -488,18 +489,92 @@ public class MyGame extends VariableFrameRateGame
 	}
 
 	// ------------------ UTILITY FUNCTIONS used by physics
-	public void initilializeMazeWalls() {
+	public void initilializeWallPhysics() {
 		float[] wall1S = {26.5f, 3.5f, 1.75f};//{width (X), height (Y), depth (Z)}
 		float[] wall2S = {1.75f, 3.5f, 12f};
 		float[] wall3S = {1.75f, 3.5f, 12f};
 		float[] wall4S = {9.5f, 3.5f, 1.5f};
 		float[] wall5S = {9f, 3.5f, 1.5f};
+		float[] wall6S = {5.25f, 3.5f, 10.5f};
+		float[] wall7S = {27f, 3.5f, 5f};
+		float[] wall8S = {16.25f, 3.5f, 4.75f};
+		float[] wall9S = {16.25f, 3.5f, 4.75f};
+		float[] wall10S = {5.35f, 3.5f, 24.25f};
+		float[] wall11S = {5.35f, 3.5f, 24.25f};
+		float[] wall12S = {16.25f, 3.5f, 8.125f};
+		float[] wall13S = {16.25f, 3.5f, 8.125f};
+		float[] wall14S = {12.5f, 3.5f, 8.125f};
+		float[] wall15S = {12.5f, 3.5f, 8.125f};
+		float[] wall16S = {5.5f, 3.5f, 14.75f};
+		float[] wall17S = {12.5f, 3.5f, 5f};
+		float[] wall18S = {12.5f, 3.5f, 5f};
+		float[] wall19S = {5.35f, 3.5f, 14.65f};
+		float[] wall20S = {5.35f, 3.5f, 14.65f};
+		float[] wall21S = {5.5f, 3.5f, 10.5f};
+		float[] wall22S = {27f, 3.5f, 5f};
+		float[] wall23S = {5.5f, 3.5f, 10.5f};
+		float[] wall24S = {27f, 3.5f, 5f};
+		float[] wall25S = {16.25f, 3.5f, 4.875f};
+		float[] wall26S = {16.25f, 3.5f, 4.875f};
+		float[] wall27S = {5.75f, 3.5f, 14.65f};
+		float[] wall28S = {12.5f, 3.5f, 5f};
+		float[] wall29S = {5.5f, 3.5f, 14.65f};
+		float[] wall30S = {12.5f, 3.5f, 5f};
+		float[] wall31S = {5.5f, 3.5f, 14.65f};
+		float[] wall32S = {5.5f, 3.5f, 14.65f};
+		float[] wall33S = {34.25f, 3.5f, 5f};
+		float[] wall34S = {34.25f, 3.5f, 5f};
+		float[] wall35S = {8f, 3.5f, 5f};
+		float[] wall36S = {8f, 3.5f, 5f};
+		float[] wall37S = {96f, 3.5f, 2f};
+		float[] wall38S = {96f, 3.5f, 2f};
+		float[] wall39S = {2f, 3.5f, 98f};
+		float[] wall40S = {2f, 3.5f, 98f};
+		float[] wall41S = {25f, 3.5f, 34f};
+		float[] wall42S = {25f, 3.5f, 34f};
 		float[] gateS = {9f, 3.5f, 1.5f};
 		Matrix4f wall1T = new Matrix4f().translation(0f, 2f, 3.25f);//position
 		Matrix4f wall2T = new Matrix4f().translation(12.5f, 2f, -3f);
 		Matrix4f wall3T = new Matrix4f().translation(-12.5f, 2f, -3f);
 		Matrix4f wall4T = new Matrix4f().translation(8.75f, 2f, -9.75f);
 		Matrix4f wall5T = new Matrix4f().translation(-8.75f, 2f, -9.75f);
+		Matrix4f wall6T = new Matrix4f().translation(0f, 2f, -20.25f);
+		Matrix4f wall7T = new Matrix4f().translation(0f, 2f, -27.375f);
+		Matrix4f wall8T = new Matrix4f().translation(-16f, 2f, -17.75f);
+		Matrix4f wall9T = new Matrix4f().translation(16f, 2f, -17.75f);
+		Matrix4f wall10T = new Matrix4f().translation(-21.45f, 2f, -17.75f);
+		Matrix4f wall11T = new Matrix4f().translation(21.45f, 2f, -17.75f);
+		Matrix4f wall12T = new Matrix4f().translation(-16f, 2f, -38.7f);
+		Matrix4f wall13T = new Matrix4f().translation(16f, 2f, -38.7f);
+		Matrix4f wall14T = new Matrix4f().translation(-35.75f, 2f, -38.7f);
+		Matrix4f wall15T = new Matrix4f().translation(35.75f, 2f, -38.7f);
+		Matrix4f wall16T = new Matrix4f().translation(0f, 2f, -42f);
+		Matrix4f wall17T = new Matrix4f().translation(-35.75f, 2f, -27.375f);
+		Matrix4f wall18T = new Matrix4f().translation(35.75f, 2f, -27.375f);
+		Matrix4f wall19T = new Matrix4f().translation(-21.425f, 2f, 6.45f);
+		Matrix4f wall20T = new Matrix4f().translation(21.425f, 2f, 6.45f);
+		Matrix4f wall21T = new Matrix4f().translation(0f, 2f, 18.3f);
+		Matrix4f wall22T = new Matrix4f().translation(0f, 2f, 11.25f);
+		Matrix4f wall23T = new Matrix4f().translation(0f, 2f, 37.675f);
+		Matrix4f wall24T = new Matrix4f().translation(0f, 2f, 30.675f);
+		Matrix4f wall25T = new Matrix4f().translation(-16f, 2f, 20.95f);
+		Matrix4f wall26T = new Matrix4f().translation(16f, 2f, 20.95f);
+		Matrix4f wall27T = new Matrix4f().translation(-32.25f, 2f, 25.875f);
+		Matrix4f wall28T = new Matrix4f().translation(-35.75f, 2f, 21f);
+		Matrix4f wall29T = new Matrix4f().translation(32.125f, 2f, 25.875f);
+		Matrix4f wall30T = new Matrix4f().translation(35.75f, 2f, 21f);
+		Matrix4f wall31T = new Matrix4f().translation(-21.425f, 2f, 35.5f);
+		Matrix4f wall32T = new Matrix4f().translation(21.425f, 2f, 35.4f);
+		Matrix4f wall33T = new Matrix4f().translation(-25f, 2f, 40.3f);
+		Matrix4f wall34T = new Matrix4f().translation(25f, 2f, 40.3f);
+		Matrix4f wall35T = new Matrix4f().translation(-44f, 2f, 30.6f);
+		Matrix4f wall36T = new Matrix4f().translation(44f, 2f, 30.6f);
+		Matrix4f wall37T = new Matrix4f().translation(0f, 2f, 48.5f);
+		Matrix4f wall38T = new Matrix4f().translation(0f, 2f, -48.5f);
+		Matrix4f wall39T = new Matrix4f().translation(-48.25f, 2f, 0f);
+		Matrix4f wall40T = new Matrix4f().translation(48.25f, 2f, 0f);
+		Matrix4f wall41T = new Matrix4f().translation(-41.875f, 2f, -3.25f);
+		Matrix4f wall42T = new Matrix4f().translation(41.875f, 2f, -3.25f);
 		Matrix4f gateT = new Matrix4f().translation(0f, 2f, -9.75f);
 		double[] transformArray = toDoubleArray(wall1T.get(vals));
 		wall1 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall1S);
@@ -511,9 +586,84 @@ public class MyGame extends VariableFrameRateGame
 		wall4 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall4S);
 		transformArray = toDoubleArray(wall5T.get(vals));
 		wall5 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall5S);
+		transformArray = toDoubleArray(wall6T.get(vals));
+		wall6 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall6S);
+		transformArray = toDoubleArray(wall7T.get(vals));
+		wall7 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall7S);
+		transformArray = toDoubleArray(wall8T.get(vals));
+		wall8 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall8S);
+		transformArray = toDoubleArray(wall9T.get(vals));
+		wall9 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall9S);
+		transformArray = toDoubleArray(wall10T.get(vals));
+		wall10 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall10S);
+		transformArray = toDoubleArray(wall11T.get(vals));
+		wall11 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall11S);
+		transformArray = toDoubleArray(wall12T.get(vals));
+		wall12 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall12S);
+		transformArray = toDoubleArray(wall13T.get(vals));
+		wall13 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall13S);
+		transformArray = toDoubleArray(wall14T.get(vals));
+		wall14 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall14S);
+		transformArray = toDoubleArray(wall15T.get(vals));
+		wall15 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall15S);
+		transformArray = toDoubleArray(wall16T.get(vals));
+		wall16 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall16S);
+		transformArray = toDoubleArray(wall17T.get(vals));
+		wall17 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall17S);
+		transformArray = toDoubleArray(wall18T.get(vals));
+		wall18 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall18S);
+		transformArray = toDoubleArray(wall19T.get(vals));
+		wall19 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall19S);
+		transformArray = toDoubleArray(wall20T.get(vals));
+		wall20 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall20S);
+		transformArray = toDoubleArray(wall21T.get(vals));
+		wall21 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall21S);
+		transformArray = toDoubleArray(wall22T.get(vals));
+		wall22 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall22S);
+		transformArray = toDoubleArray(wall23T.get(vals));
+		wall23 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall23S);
+		transformArray = toDoubleArray(wall24T.get(vals));
+		wall24 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall24S);
+		transformArray = toDoubleArray(wall25T.get(vals));
+		wall25 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall25S);
+		transformArray = toDoubleArray(wall26T.get(vals));
+		wall26 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall26S);
+		transformArray = toDoubleArray(wall27T.get(vals));
+		wall27 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall27S);
+		transformArray = toDoubleArray(wall28T.get(vals));
+		wall28 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall28S);
+		transformArray = toDoubleArray(wall29T.get(vals));
+		wall29 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall29S);
+		transformArray = toDoubleArray(wall30T.get(vals));
+		wall30 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall30S);
+		transformArray = toDoubleArray(wall31T.get(vals));
+		wall31 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall31S);
+		transformArray = toDoubleArray(wall32T.get(vals));
+		wall32 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall32S);
+		transformArray = toDoubleArray(wall33T.get(vals));
+		wall33 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall33S);
+		transformArray = toDoubleArray(wall34T.get(vals));
+		wall34 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall34S);
+		transformArray = toDoubleArray(wall35T.get(vals));
+		wall35 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall35S);
+		transformArray = toDoubleArray(wall36T.get(vals));
+		wall36 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall36S);
+		transformArray = toDoubleArray(wall37T.get(vals));
+		wall37 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall37S);
+		transformArray = toDoubleArray(wall38T.get(vals));
+		wall38 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall38S);
+		transformArray = toDoubleArray(wall39T.get(vals));
+		wall39 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall39S);
+		transformArray = toDoubleArray(wall40T.get(vals));
+		wall40 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall40S);
+		transformArray = toDoubleArray(wall41T.get(vals));
+		wall41 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall41S);
+		transformArray = toDoubleArray(wall42T.get(vals));
+		wall42 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall42S);
 		transformArray = toDoubleArray(gateT.get(vals));
 		gate = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, gateS);
 	}
+
 	public void openGate() {
 		if (gate != null) {
 			physicsEngine.removeObject(gate.getUID());
