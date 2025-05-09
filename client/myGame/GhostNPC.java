@@ -23,6 +23,6 @@ public class GhostNPC extends GameObject {
     }
 
     public void lookAtTageman(Vector3f tp) {
-        //this.lookAt(tp);
+        this.lookAt(tp);
     }
 }

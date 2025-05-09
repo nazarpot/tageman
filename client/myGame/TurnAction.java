@@ -40,6 +40,8 @@ public class TurnAction extends AbstractInputAction {
         } else {
             avatar.yaw(3.0f * direction);
         }
-        protClient.sendMoveMessage(avatar.getWorldLocation(), direction);
+        if (protClient != null) {
+            protClient.sendMoveMessage(avatar.getWorldLocation(), direction);
+        }
     }
 }

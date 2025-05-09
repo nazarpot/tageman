@@ -52,9 +52,10 @@ public class MyGame extends VariableFrameRateGame
 
 	private GameObject avatar, terrain;
 	private GameObject tageman, dol, blinky, pinky, inky, clyde, pellet;
+	private Vector<GameObject> powerPellets = new Vector<>();
 	private ObjShape dolS, ghostS, pacmanGhostS, terrainS, pelletS;
 	private TextureImage tageTX, ghostT, terrainT, mazeTx;
-	private TextureImage blinkyT, pinkyT, inkyT, clydeT, scaredGhostT;
+	private TextureImage blinkyT, pinkyT, inkyT, clydeT, casperT, scaredGhostT;
 	private AnimatedShape tageS;
 	private Light light1;
 	private PhysicsEngine physicsEngine;
@@ -74,11 +75,21 @@ public class MyGame extends VariableFrameRateGame
 	private ProtocolClient protClient;
 	private boolean isClientConnected = false, alreadyMoving = false, isMovingForward = false, isMovingBackward = false;
 	private boolean isGameOngoing = false, isGateOpen = false;
+	private boolean gameStarted = false;
 
 	private int mapWidth, mapHeight;
 
-	private String dispStr2 = new String("");
-	private Vector3f hud2Color = new Vector3f(0, 0, 1);
+	private String dispStr2 = new String("choose character");
+	private Vector3f hud2Color = new Vector3f(0, 1, 0);
+
+	private boolean poweredUp = false;
+	private double powerTime;
+
+	private double prevCountdown, countdown;
+
+	private int remainingLives = 3;
+	private int remainingPellets;
+	private boolean powerup = false;
 
 	public MyGame(String serverAddress, int serverPort, String protocol) {
 		super();
@@ -119,9 +130,10 @@ public class MyGame extends VariableFrameRateGame
 		pinkyT = new TextureImage("pinky.png");
 		inkyT = new TextureImage("inky.png");
 		clydeT = new TextureImage("clyde.png");
+		casperT = new TextureImage("casper.png");
 		scaredGhostT = new TextureImage("scared.png");
 
-		npcTex = scaredGhostT;
+		npcTex = casperT;
 	}
 
 	@Override
@@ -149,7 +161,7 @@ public class MyGame extends VariableFrameRateGame
 		blinky = new GameObject(GameObject.root(), pacmanGhostS, blinkyT);
 		initialScale = (new Matrix4f()).scaling(0.4f);
 		blinky.setLocalScale(initialScale);
-		//blinky.getRenderStates().disableRendering();
+		blinky.getRenderStates().disableRendering();
 		avatarSelection.add(blinky);
 
 		pinky = new GameObject(GameObject.root(), pacmanGhostS, pinkyT);
@@ -192,9 +204,9 @@ public class MyGame extends VariableFrameRateGame
 
 	@Override
 	public void initializeLights()
-	{	Light.setGlobalAmbient(0.7f, 0.7f, 0.7f);
+	{	Light.setGlobalAmbient(0.2f, 0.2f, 0.5f);
 		light1 = new Light();
-		light1.setDiffuse(1.0f, 1.0f, 1.0f);
+		light1.setDiffuse(0.9f, 0.85f, 0.10f);	//yellow for pacman
 		light1.setLocation(new Vector3f(0.0f, 1.0f, 0.0f));
 		(engine.getSceneGraph()).addLight(light1);
 	}
@@ -209,6 +221,8 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void initializeGame()
 	{
+		im = engine.getInputManager();
+
 		lastFrameTime = System.currentTimeMillis();
 		currFrameTime = System.currentTimeMillis();
 		elapsedTime = 0.0;
@@ -241,7 +255,7 @@ public class MyGame extends VariableFrameRateGame
 		terrainP = (engine.getSceneGraph()).addPhysicsStaticPlane(tempTransform, upVector, planeConstant);
 		terrain.setPhysicsObject(terrainP);
 
-		initializeAvatarPhysics(blinky, 10f);
+		//initializeAvatarPhysics(blinky, 10f);
 
 		initilializeWallPhysics();
 
@@ -277,13 +291,21 @@ public class MyGame extends VariableFrameRateGame
 		currFrameTime = System.currentTimeMillis();
 		elapsedTime += (currFrameTime - lastFrameTime) / 1000.0;
 
-		orbitController.updateCameraPosition();
+		if (orbitController != null) {
+			orbitController.updateCameraPosition();
+		}
+
+		usePowerPellet(false);
+		countdownToStart();
 
 		// build and set HUD
 		int elapsedTimeSec = Math.round((float)elapsedTime);
 		String elapsedTimeStr = Integer.toString(elapsedTimeSec);
 		String counterStr = Integer.toString(counter);
-		String dispStr1 = "Time = " + elapsedTimeStr;
+		String dispStr1 = "";
+		if (isGameOngoing) {
+			dispStr1 = "Lives: " + remainingLives;
+		}
 		Vector3f hud1Color = new Vector3f(1,0,0);
 		(engine.getHUDmanager()).setHUD1(dispStr1, hud1Color, 15, 15);
 		(engine.getHUDmanager()).setHUD2(dispStr2, hud2Color, 500, 15);
@@ -292,7 +314,7 @@ public class MyGame extends VariableFrameRateGame
 		processNetworking((float) elapsedTime);
 
 		Vector3f avatarLoc = avatar.getWorldLocation();
-		light1.setLocation(avatarLoc);
+		light1.setLocation(avatarLoc.add(0.0f, 1.0f, 0.0f));
 
 		tageS.updateAnimation();
 
@@ -330,7 +352,9 @@ public class MyGame extends VariableFrameRateGame
 					moveDirection.z() * moveSpeed
 				});
 				
-				protClient.sendMoveMessage(avatar.getWorldLocation(), 0.0f);
+				if (protClient != null) {
+					protClient.sendMoveMessage(avatar.getWorldLocation(), 0.0f);
+				}
 			} else {
 				avatar.getPhysicsObject().setLinearVelocity(new float[] { 0f, 0f, 0f });
 			}
@@ -393,15 +417,32 @@ public class MyGame extends VariableFrameRateGame
 				}
 				break;
 			case KeyEvent.VK_ENTER:
-				characterName = characterNames[selection];
+				if (!joined) {
+					characterName = characterNames[selection];
 				joinGame(characterName);
 
 				im = engine.getInputManager();
 				String gpName = im.getFirstGamepadName();
 				String keyboardName = im.getKeyboardName();
-		
 				Camera c = (engine.getRenderSystem().getViewport("MAIN").getCamera());
 				orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
+				}
+				
+				break;
+			case KeyEvent.VK_BACK_SLASH:
+				if (!joined) {
+				characterName = characterNames[selection];
+				String gpName = im.getFirstGamepadName();
+				String keyboardName = im.getKeyboardName();
+				Camera c = (engine.getRenderSystem().getViewport("MAIN").getCamera());
+				orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
+
+				joined = true;
+				dispStr2 = "";
+
+				setUpGame();
+				}
+				
 				break;
 			case KeyEvent.VK_SPACE:		//to start game. pacman starts the game
 				if (joined == true && characterName.equals("tageman") && !isGameOngoing) {
@@ -423,6 +464,10 @@ public class MyGame extends VariableFrameRateGame
 
 		avatar.setLocalTranslation(new Matrix4f().translation(0f, .5f, -5f));
 
+		setUpGame();
+	}
+
+	private void setUpGame() {
 		initializeAvatarPhysics(avatar, 10f);
 
 		//------------- INPUTS SECTION--------------------------
@@ -454,6 +499,27 @@ public class MyGame extends VariableFrameRateGame
 		im.associateActionWithAllKeyboards(net.java.games.input.Component.Identifier.Key.D, 
 											turnRightAction, 
 											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+	
+		if (characterName == "tageman") {
+			//create power pellets
+			for (int i = -1; i < 2; i = i + 2) {
+				for (int j = -1; j < 2; j = j + 2) {
+					GameObject powerPellet = new GameObject(GameObject.root(), pelletS);
+					Matrix4f initialTranslation = (new Matrix4f()).translation((i * 44), 1, (j * 22));
+					powerPellet.setLocalTranslation(initialTranslation);
+					powerPellets.add(powerPellet);
+				}
+			}
+
+			for (int i = 0; i < 4; i++) {
+				GameObject powerPellet = powerPellets.elementAt(i);
+				Matrix4f translation = new Matrix4f(powerPellet.getLocalTranslation());
+				double[] tempTransform = toDoubleArray(translation.get(vals));
+				PhysicsObject powerP = (engine.getSceneGraph()).addPhysicsSphere(0f, tempTransform, 1.0f);
+				powerP.setBounciness(0.8f);
+				powerPellet.setPhysicsObject(powerP);
+			}
+		}
 	}
 
 	public void confirmJoin() {
@@ -461,14 +527,40 @@ public class MyGame extends VariableFrameRateGame
 		avatar.setLocalTranslation((new Matrix4f()).translation(0, 1, -5));
 		ghostS = avatar.getShape();
 		ghostT = avatar.getTextureImage();
+
+		dispStr2 = "";
 	}
 
 	public void startGame() {
 		System.out.println("starting game");
-		Vector3f position = new Vector3f(0.0f, 0.0f, 5.0f);
-		System.out.println("creating npc ghost");
-		protClient.sendCreateNPCmessage(position);
+		if (characterName == "tageman") {
+			countdownToStart();
+		}
+
 		isGameOngoing = true;
+	}
+
+	private void countdownToStart() {
+		if (isGameOngoing) {
+			if (countdown <= 0 && !gameStarted) {
+				gameStarted = true;
+				protClient.sendStartGame(0);
+
+				Vector3f position = new Vector3f(0.0f, 1.0f, 5.0f);
+				System.out.println("creating npc ghost");
+				protClient.sendCreateNPCmessage(position);
+			} else {
+				countdown = countdown - (currFrameTime - lastFrameTime);
+				if ((prevCountdown - countdown) >= 0) {
+					protClient.sendStartGame(Math.round((float)countdown));
+					prevCountdown = Math.round((float)countdown);
+					dispStr2 = "Starting game in " + countdown;
+				} 
+			}
+		} else {
+			countdown = 10000;
+			prevCountdown = 10000;
+		}
 	}
 
 	public void setTagemanChomp(boolean moving) {
@@ -713,7 +805,7 @@ public class MyGame extends VariableFrameRateGame
 		dynamicsWorld = ((JBulletPhysicsEngine)physicsEngine).getDynamicsWorld();
 		dispatcher = dynamicsWorld.getDispatcher();
 		int manifoldCount = dispatcher.getNumManifolds();
-		for (int i=0; i<2; i++) {
+		for (int i=0; i<manifoldCount; i++) {
 			manifold = dispatcher.getManifoldByIndexInternal(i);
 			if (manifold != null) {
 				object1 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody0();
@@ -721,56 +813,62 @@ public class MyGame extends VariableFrameRateGame
 			JBulletPhysicsObject obj1 = JBulletPhysicsObject.getJBulletPhysicsObject(object1);
 			JBulletPhysicsObject obj2 = JBulletPhysicsObject.getJBulletPhysicsObject(object2);
 
-			int avatarUID = avatar.getPhysicsObject().getUID();
-			int pelletUID = pellet.getPhysicsObject().getUID();
-			
-			boolean tagemanHitPellet = (
+			for (int k = 0; k < powerPellets.size(); k++) {
+				GameObject powerPellet = powerPellets.elementAt(k);
+				int avatarUID = avatar.getPhysicsObject().getUID();
+				int pelletUID = powerPellet.getPhysicsObject().getUID();
+
+				boolean tagemanHitPellet = (
 				(obj1.getUID() == avatarUID && obj2.getUID() == pelletUID) ||
 				(obj2.getUID() == avatarUID && obj1.getUID() == pelletUID)
 				);
 
-			for (int j = 0; j < manifold.getNumContacts(); j++) {
-				contactPoint = manifold.getContactPoint(j);
-				if (contactPoint.getDistance() < 0.0f && tagemanHitPellet) {
-					System.out.println("Pellet eaten!");
-					pellet.getRenderStates().disableRendering();
-					(engine.getSceneGraph()).removeGameObject(pellet);
-					physicsEngine.removeObject(pellet.getPhysicsObject().getUID());
-					break;
-				}
-				if (contactPoint.getDistance() < 0.0f && ((obj1 == tageP && obj2 == blinkyP) || (obj1 == blinkyP && obj2 == tageP))) {
-					// Apply bounce forces
-					// Get positions
-					javax.vecmath.Vector3f posTageman = new javax.vecmath.Vector3f();
-					javax.vecmath.Vector3f posBlinky = new javax.vecmath.Vector3f();
-					((JBulletPhysicsObject) tageP).getRigidBody().getCenterOfMassPosition(posTageman);
-					((JBulletPhysicsObject) blinkyP).getRigidBody().getCenterOfMassPosition(posBlinky);
+				for (int j = 0; j < manifold.getNumContacts(); j++) {
+					contactPoint = manifold.getContactPoint(j);
+					if (contactPoint.getDistance() < 0.0f && tagemanHitPellet) {
+						System.out.println("Pellet eaten!");
+						powerPellet.getRenderStates().disableRendering();
+						(engine.getSceneGraph()).removeGameObject(powerPellet);
+						physicsEngine.removeObject(powerPellet.getPhysicsObject().getUID());
+						usePowerPellet(true);
+						break;
+					}
+					if (contactPoint.getDistance() < 0.0f && ((obj1 == tageP && obj2 == blinkyP) || (obj1 == blinkyP && obj2 == tageP))) {
+						// Apply bounce forces
+						// Get positions
+						javax.vecmath.Vector3f posTageman = new javax.vecmath.Vector3f();
+						javax.vecmath.Vector3f posBlinky = new javax.vecmath.Vector3f();
+						((JBulletPhysicsObject) tageP).getRigidBody().getCenterOfMassPosition(posTageman);
+						((JBulletPhysicsObject) blinkyP).getRigidBody().getCenterOfMassPosition(posBlinky);
 
 
-					// Direction from Blinky to Tageman
-					javax.vecmath.Vector3f bounceDirection = new javax.vecmath.Vector3f();
-					bounceDirection.sub(posTageman, posBlinky); // Tageman - Blinky
-					bounceDirection.normalize();
+						// Direction from Blinky to Tageman
+						javax.vecmath.Vector3f bounceDirection = new javax.vecmath.Vector3f();
+						bounceDirection.sub(posTageman, posBlinky); // Tageman - Blinky
+						bounceDirection.normalize();
 
-					// Now apply impulse to both
-					javax.vecmath.Vector3f impulseToTageman = new javax.vecmath.Vector3f(bounceDirection);
-					impulseToTageman.scale(.5f); //force
+						// Now apply impulse to both
+						javax.vecmath.Vector3f impulseToTageman = new javax.vecmath.Vector3f(bounceDirection);
+						impulseToTageman.scale(.5f); //force
 
-					javax.vecmath.Vector3f impulseToBlinky = new javax.vecmath.Vector3f(bounceDirection);
-					impulseToBlinky.scale(-.5f); //opposite direction
+						javax.vecmath.Vector3f impulseToBlinky = new javax.vecmath.Vector3f(bounceDirection);
+						impulseToBlinky.scale(-.5f); //opposite direction
 
-					((JBulletPhysicsObject) tageP).getRigidBody().applyCentralImpulse(impulseToTageman);
-					((JBulletPhysicsObject) blinkyP).getRigidBody().applyCentralImpulse(impulseToBlinky);
+						((JBulletPhysicsObject) tageP).getRigidBody().applyCentralImpulse(impulseToTageman);
+						((JBulletPhysicsObject) blinkyP).getRigidBody().applyCentralImpulse(impulseToBlinky);
 
-					System.out.println("Tageman and Blinky bounced!");
+						System.out.println("Tageman and Blinky bounced!");
+					}
 				}
 			}
+			
+			
 			}
 			
 		}
 	}
 
-	private void initializeAvatarPhysics(GameObject character, float mass) {
+	public void initializeAvatarPhysics(GameObject character, float mass) {
 		float radius = 0.5f;
 		float height = 0.15f;
 
@@ -798,6 +896,48 @@ public class MyGame extends VariableFrameRateGame
 			inkyP = po;
 		} else if (character == clyde) {
 			clydeP = po;
+		}
+	}
+
+	public  void usePowerPellet(Boolean activate) {
+		if (poweredUp == true) {
+			if (powerTime < 0) {
+				Matrix4f scale = (new Matrix4f().scaling(0.5f));
+				avatar.setLocalScale(scale);
+				if (protClient != null) {
+					protClient.sendPowerMessage(false);
+				}
+
+				int num = gm.getGhostsNum();
+				for (int i = 0; i < num; i++) {
+					GhostAvatar go = (GhostAvatar) gm.getAvatar(i);
+					if (go.getName() != "tageman") {
+						go.setTextureImage(getGhostTexture(go.getName()));
+					}
+				}
+				
+				poweredUp = false;
+			} else {
+				powerTime = powerTime - (currFrameTime - lastFrameTime);
+			}
+		} else {
+			if (activate) {
+				poweredUp = true;
+				powerTime = 20000;
+				Matrix4f scale = (new Matrix4f()).scaling(2.0f);
+				avatar.setLocalScale(scale);
+				if (protClient != null) {
+					protClient.sendPowerMessage(true);
+				}
+
+				int num = gm.getGhostsNum();
+				for (int i = 0; i < num; i++) {
+					GhostAvatar go = (GhostAvatar) gm.getAvatar(i);
+					if (go.getName() != "tageman") {
+						go.setTextureImage(scaredGhostT);
+					}
+				}
+			}
 		}
 	}
 
@@ -833,18 +973,18 @@ public class MyGame extends VariableFrameRateGame
 
 	private void setupNetworking(String character)
 	{	isClientConnected = false;	
-		try 
-		{	protClient = new ProtocolClient(InetAddress.getByName(serverAddress), serverPort, serverProtocol, this);
-		} 	catch (UnknownHostException e) 
-		{	e.printStackTrace();
-		}	catch (IOException e) 
-		{	e.printStackTrace();
-		}
-		if (protClient == null)
-		{	System.out.println("missing protocol host");
-		}
-		else
-		{	// Send the initial join message with a unique identifier for this client
+		try {	
+			if (protClient == null) {
+				protClient = new ProtocolClient(InetAddress.getByName(serverAddress), serverPort, serverProtocol, this);
+			}
+		} 	catch (UnknownHostException e) {	
+			e.printStackTrace();
+		}	catch (IOException e) {	
+			e.printStackTrace();
+		} 
+		if (protClient == null) {	
+			System.out.println("missing protocol host");
+		} else {	// Send the initial join message with a unique identifier for this client
 			System.out.println("sending join message to protocol host");
 			protClient.sendJoinMessage(character);
 		}
@@ -852,8 +992,9 @@ public class MyGame extends VariableFrameRateGame
 	
 	protected void processNetworking(float elapsTime)
 	{	// Process packets received by the client from the server
-		if (protClient != null)
+		if (protClient != null) {
 			protClient.processPackets();
+		}
 	}
 
 	public Vector3f getPlayerPosition() { return avatar.getWorldLocation(); }
@@ -865,7 +1006,9 @@ public class MyGame extends VariableFrameRateGame
 	@Override
 	public void shutdown() {
 		super.shutdown();
-		protClient.sendByeMessage(characterName);
+		if (protClient != null) {
+			protClient.sendByeMessage(characterName);
+		}
 	}
 	
 	private class SendCloseConnectionPacketAction extends AbstractInputAction
@@ -882,4 +1025,43 @@ public class MyGame extends VariableFrameRateGame
 	public TextureImage getNPCtexture() { return npcTex; }
 
 	public void setHUD2string(String s) {dispStr2 = s;}
+
+	public void setLives(int lives) { remainingLives = lives; }
+
+
+	public void setPowerup(UUID ghostID, boolean powerup) { 
+		this.powerup = powerup; 
+		GameObject pacman = gm.findAvatar(ghostID);
+
+		if (powerup) {
+			Matrix4f scale = (new Matrix4f().scaling(2.f));
+			pacman.setLocalScale(scale);
+
+			int num = gm.getGhostsNum();
+			for (int i = 0; i < num; i++) {
+				GhostAvatar go = (GhostAvatar) gm.getAvatar(i);
+				if (go.getName() != "tageman") {
+					go.setTextureImage(scaredGhostT);
+				}
+			}
+
+			if (characterName != "tageman") {
+				avatar.setTextureImage(scaredGhostT);
+			}
+			
+		} else {
+			Matrix4f scale = (new Matrix4f()).scaling(0.5f);
+			pacman.setLocalScale(scale);
+
+			int num = gm.getGhostsNum();
+			for (int i = 0; i < num; i++) {
+				GhostAvatar go = (GhostAvatar) gm.getAvatar(i);
+				if (go.getName() != "tageman") {
+					go.setTextureImage(getGhostTexture(go.getName()));
+				}
+			}
+
+			avatar.setTextureImage(getGhostTexture(characterName));
+		}
+	}
 }

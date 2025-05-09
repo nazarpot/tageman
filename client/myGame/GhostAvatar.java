@@ -14,10 +14,12 @@ import org.joml.*;
 public class GhostAvatar extends GameObject
 {
 	UUID uuid;
+	String name;
 
-	public GhostAvatar(UUID id, ObjShape s, TextureImage t, Vector3f p) {
+	public GhostAvatar(UUID id, ObjShape s, TextureImage t, Vector3f p, String n) {
 		super(GameObject.root(), s, t);
 		uuid = id;
+		name = n;
 		setPosition(p);
 	}
 	
@@ -25,4 +27,5 @@ public class GhostAvatar extends GameObject
 	public void setPosition(Vector3f m) { setLocalLocation(m); }
 	public Vector3f getPosition() { return getWorldLocation(); }
 	public void setRotation(float m) { yaw(3.0f * m); }
+	public String getName() { return name; }
 }

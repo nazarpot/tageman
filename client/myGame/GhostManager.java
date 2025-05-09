@@ -23,10 +23,11 @@ public class GhostManager
 	{	System.out.println("adding ghost with ID --> " + id);
 		ObjShape s = game.getGhostShape(name);
 		TextureImage t = game.getGhostTexture(name);
-		GhostAvatar newAvatar = new GhostAvatar(id, s, t, position);
+		GhostAvatar newAvatar = new GhostAvatar(id, s, t, position, name);
 		Matrix4f initialScale = (new Matrix4f()).scaling(0.5f);
 		newAvatar.setLocalScale(initialScale);
 		ghostAvatars.add(newAvatar);
+		//game.initializeAvatarPhysics(newAvatar, 10f);
 		System.out.println("added ghost");
 	}
 	
@@ -41,7 +42,7 @@ public class GhostManager
 		}
 	}
 
-	private GhostAvatar findAvatar(UUID id)
+	public GhostAvatar findAvatar(UUID id)
 	{	GhostAvatar ghostAvatar;
 		Iterator<GhostAvatar> it = ghostAvatars.iterator();
 		while(it.hasNext())
@@ -57,7 +58,8 @@ public class GhostManager
 	{	GhostAvatar ghostAvatar = findAvatar(id);
 
 		if (ghostAvatar != null)
-		{	ghostAvatar.setPosition(position);
+		{	
+			ghostAvatar.setPosition(position);
 			ghostAvatar.setRotation(rotateBy);
 		}
 		else
@@ -65,4 +67,8 @@ public class GhostManager
 		}
 		
 	}
+
+	public int getGhostsNum() { return ghostAvatars.size(); }
+
+	public GameObject getAvatar(int i) { return ghostAvatars.elementAt(i); }
 }

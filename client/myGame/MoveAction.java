@@ -36,14 +36,18 @@ public class MoveAction extends AbstractInputAction
                     game.setMovingForward(true);
                     if (game.getCharacterName().equals("tageman")) {
                         game.setTagemanChomp(true);
-                        protClient.sendChompMessage(true);
+                        if (protClient != null) {
+                           protClient.sendChompMessage(true); 
+                        }   
                     }
                     
                 } else {
                     game.setMovingForward(false);
                     if (game.getCharacterName().equals("tageman")) {
                         game.setTagemanChomp(false);    
-                        protClient.sendChompMessage(false);
+                        if (protClient != null) {
+                            protClient.sendChompMessage(false);
+                        }
                     }
                 }
                 break;

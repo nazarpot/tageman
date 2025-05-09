@@ -129,6 +129,18 @@ public class ProtocolClient extends GameConnectionClient
 				game.setTagemanChomp(toChomp);
 			}
 
+			// START GAME
+			if (messageTokens[0].compareTo("start") == 0) {
+
+			}
+
+			// POWER UP
+			if (messageTokens[0].compareTo("power") == 0) {
+				Boolean powerup = Boolean.parseBoolean(messageTokens[2]);
+				UUID ghostID = UUID.fromString(messageTokens[1]);
+				game.setPowerup(ghostID, powerup);
+			}
+
 			// create ghost npc
 			if (messageTokens[0].compareTo("createNPC") == 0) {
 				Vector3f ghostPosition = new Vector3f(
@@ -178,7 +190,7 @@ public class ProtocolClient extends GameConnectionClient
 	public void sendJoinMessage(String character)
 	{	try 
 		{	sendPacket(new String("join," + id.toString() + "," + character));
-			System.out.println("client joined server");
+			System.out.println("client requesting to join server");
 		} catch (IOException e) 
 		{	e.printStackTrace();
 	}	}
@@ -259,6 +271,30 @@ public class ProtocolClient extends GameConnectionClient
 			sendPacket(message);
 		} catch (IOException e) {
 			System.out.println("failure to update chomp");
+			e.printStackTrace();
+		}
+	}
+
+	public void sendStartGame(int time) {
+		try {
+			String message = new String("start," + id.toString());
+			message += "," + time;
+			sendPacket(message);
+		} catch (IOException e) {
+			System.out.println("failure to start game");
+			e.printStackTrace();
+		}
+	}
+
+	public void sendPowerMessage(boolean isPowered) {
+		//true if power up is in play
+		//false if powerup is no longer in play
+		try {
+			String message = new String("power," + id.toString());
+			message += "," + Boolean.toString(isPowered);
+			sendPacket(message);
+		} catch (IOException e) {
+			System.out.println("power message not sent");
 			e.printStackTrace();
 		}
 	}
