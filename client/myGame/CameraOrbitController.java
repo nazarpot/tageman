@@ -86,12 +86,11 @@ public class CameraOrbitController {
         float z = cameraRadius * (float)(Math.cos(phi) * Math.cos(theta));
         camera.setLocation(new Vector3f(x, y, z).add(avatar.getWorldLocation()));
         camera.lookAt(avatar);
-        /*System.out.println("updating: \n" + 
-                            "azimuth: " + cameraAzimuth + "\n" + 
-                            "elevation: " + cameraElevation + "\n" + 
-                            "radius: " + cameraRadius);*/
+
         cameraAzimuth = 0;
         cameraElevation = 10;
+        cameraRadius = 2.75f;
+        camera.lookAt(avatar);
     }
 
     private class OrbitAzimuthAction extends AbstractInputAction {
@@ -187,15 +186,12 @@ public class CameraOrbitController {
                 else if (event.getValue() > 0.2) {elevChange = 0.5f;}
                 else {elevChange = 0.0f;}
             } else {
-                elevChange = 155;
-            }
-            
-            cameraElevation += elevChange;
-            if (cameraElevation < 0) {
-                cameraElevation = 0.0f;
-            }
-            if (cameraElevation > 180) {
-                cameraElevation = 180.0f;
+                if (direction > 0) {
+                    cameraElevation = 90;  
+                    cameraRadius = 20;
+                } else {
+                    cameraElevation = 155;
+                }
             }
         }
     }

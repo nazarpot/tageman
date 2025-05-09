@@ -125,6 +125,20 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 				sendChompMessages(clientID, toChomp);
 			}
 
+			//START GAME
+			if (messageTokens[0].compareTo("start") == 0) {
+				UUID clientID = UUID.fromString(messageTokens[1]);
+				String time = messageTokens[2];
+				sendStartGameMessages(clientID, time);
+			}
+
+			// POWERUP message
+			if (messageTokens[0].compareTo("power") == 0) {
+				UUID clientID = UUID.fromString(messageTokens[1]);
+				String powerUp = messageTokens[2];
+				sendPowerMessages(clientID, powerUp);
+			}
+
 			//CREATE NPC
 			if (messageTokens[0].compareTo("createNPC") == 0) {
 				UUID clientID = UUID.fromString(messageTokens[1]);
@@ -312,6 +326,28 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 			message += "," + toChomp;
 			forwardPacketToAll(message, clientID);
 		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void sendStartGameMessages(UUID clientID, String time) {
+		try {
+			String message = new String("start," + clientID.toString());
+			message += "," + time;
+			forwardPacketToAll(message, clientID);
+		} catch (IOException e) {
+			System.out.println("failure to start game");
+			e.printStackTrace();
+		}
+	}
+
+	public void sendPowerMessages(UUID clientID, String powerup) {
+		try {
+			String message = new String("power," + clientID.toString());
+			message += "," + powerup;
+			forwardPacketToAll(message, clientID);
+		} catch (IOException e) {
+			System.out.println("failure to send power message");
 			e.printStackTrace();
 		}
 	}

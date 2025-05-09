@@ -39,7 +39,7 @@ public class NPC {
             dirZ = 0.1;
         }
 
-        locationX += dirX;
-        locationZ += dirZ;
+        locationX += 0.75 * dirX;
+        locationZ += 0.75 * dirZ;
     }
 }
