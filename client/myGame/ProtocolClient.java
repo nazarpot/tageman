@@ -131,14 +131,38 @@ public class ProtocolClient extends GameConnectionClient
 
 			// START GAME
 			if (messageTokens[0].compareTo("start") == 0) {
-
+				UUID ghostID = UUID.fromString(messageTokens[1]);
+				float time = Float.parseFloat(messageTokens[2]);
+				game.setGameOngoing(true);
+				game.updateCountdown(time);
 			}
 
 			// POWER UP
 			if (messageTokens[0].compareTo("power") == 0) {
-				Boolean powerup = Boolean.parseBoolean(messageTokens[2]);
 				UUID ghostID = UUID.fromString(messageTokens[1]);
+				Boolean powerup = Boolean.parseBoolean(messageTokens[2]);
 				game.setPowerup(ghostID, powerup);
+			}
+
+			// EATEN message
+			if (messageTokens[0].compareTo("eaten") == 0) {
+				game.eaten();
+			}
+
+			// CAUGHT message 
+			if (messageTokens[0].compareTo("caught") == 0) {
+				UUID ghostID = UUID.fromString(messageTokens[1]);
+				int lives = Integer.parseInt(messageTokens[2]);
+				game.reset(lives);
+			}
+
+			// VICTORY MESSAGE
+			// 0 - tageman won
+			// 1 - ghosts win
+			if (messageTokens[0].compareTo("victory") == 0) {
+				UUID ghostID = UUID.fromString(messageTokens[1]);
+				int who = Integer.parseInt(messageTokens[2]);
+				game.victory(who);
 			}
 
 			// create ghost npc
@@ -299,6 +323,28 @@ public class ProtocolClient extends GameConnectionClient
 		}
 	}
 
+	public void sendEatenMessage(UUID recipientID) {
+		try {
+			String message = new String("eaten," + id.toString());
+			message += "," + recipientID;
+			sendPacket(message);
+		} catch (IOException e) {
+			System.out.println("eaten message not sent");
+			e.printStackTrace();
+		}
+	}
+
+	public void sendCaughtMessage(int lives) {
+		try {
+			String message = new String("caught," + id.toString());
+			message += "," + lives;
+			sendPacket(message);
+		} catch (IOException e) {
+			System.out.println("tageman caught not sent to server");
+			e.printStackTrace();
+		}
+	}
+
 	// ---------------- Ghost section -------------------
 	public void sendCreateNPCmessage(Vector3f position) {
 		try {
@@ -321,5 +367,19 @@ public class ProtocolClient extends GameConnectionClient
 		if (ghostNPC == null) {
 			ghostNPC = new GhostNPC(0, game.getNPCshape(), game.getNPCtexture(), position);
 		}
+	}
+
+	public void sendDeleteNPC() {
+		try {
+			String message = new String("deleteNPC," + id.toString());
+			sendPacket(message);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void deleteNPC() {
+		(game.getEngine().getSceneGraph()).removeGameObject(ghostNPC);
+		ghostNPC = null;
 	}
 }

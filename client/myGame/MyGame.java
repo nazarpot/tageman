@@ -90,6 +90,9 @@ public class MyGame extends VariableFrameRateGame
 	private int remainingPellets;
 	private boolean powerup = false;
 
+	private double respawnTime;
+	private boolean inPlay, eaten, caught;
+
 	public MyGame(String serverAddress, int serverPort, String protocol) {
 		super();
 		gm = new GhostManager(this);
@@ -292,8 +295,6 @@ public class MyGame extends VariableFrameRateGame
 		Camera c = (engine.getRenderSystem().getViewport("MAIN").getCamera());
 		orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
 
-		//setupNetworking();
-
 		//engine.disableGraphicsWorldRender();
 		//engine.enablePhysicsWorldRender();
 	}
@@ -320,8 +321,15 @@ public class MyGame extends VariableFrameRateGame
 			orbitController.updateCameraPosition();
 		}
 
+		if (characterName == "tageman" && gameStarted && !caught) {
+			checkGhostCollisions();
+		}
 		usePowerPellet(false);
 		countdownToStart();
+
+		if(eaten) {
+			respawnGhost();
+		}
 
 		// build and set HUD
 		int elapsedTimeSec = Math.round((float)elapsedTime);
@@ -570,20 +578,38 @@ public class MyGame extends VariableFrameRateGame
 				gameStarted = true;
 				protClient.sendStartGame(0);
 
+				//avatar.setLocalTranslation((new Matrix4f()).translation(0, 1, 25));
+
+				physicsEngine.removeObject(avatar.getPhysicsObject().getUID());
+				avatar.setLocalTranslation((new Matrix4f()).translation(0, 1, 25));
+				initializeAvatarPhysics(avatar, 10f);
+
 				Vector3f position = new Vector3f(0.0f, 1.0f, 5.0f);
 				System.out.println("creating npc ghost");
 				protClient.sendCreateNPCmessage(position);
 			} else {
-				countdown = countdown - (currFrameTime - lastFrameTime);
-				if ((prevCountdown - countdown) >= 0) {
-					protClient.sendStartGame(Math.round((float)countdown));
-					prevCountdown = Math.round((float)countdown);
-					dispStr2 = "Starting game in " + countdown;
-				} 
+				if (!gameStarted) {
+					countdown = countdown - (currFrameTime - lastFrameTime);
+					if ((prevCountdown - countdown) >= 0) {
+						protClient.sendStartGame(Math.round((float)countdown));
+						prevCountdown = Math.round((float)countdown);
+						dispStr2 = "Starting game in " + countdown;
+					} 
+				}
 			}
 		} else {
 			countdown = 10000;
 			prevCountdown = 10000;
+		}
+	}
+
+	public void updateCountdown(float time) {
+		dispStr2 = "Starting game in " + time;
+		if (time == 0) {
+			gameStarted = true;
+			inPlay = true;
+			caught = false;
+			openGate();
 		}
 	}
 
@@ -790,6 +816,97 @@ public class MyGame extends VariableFrameRateGame
 		}
 	}
 
+	public void checkGhostCollisions() {
+		int num = gm.getGhostsNum();
+		for (int i = 0; i < num; i++) {
+			GhostAvatar ga = (GhostAvatar) gm.getAvatar(i);
+			Vector3f pos = ga.getLocalLocation();
+			Vector3f aPos = avatar.getLocalLocation();
+			aPos.sub(pos);
+			
+			
+			if (Math.abs(aPos.x()) <= 1.0f && Math.abs(aPos.z()) <= 1.0f) {
+				getCaught(ga);
+			} else if (Math.abs(aPos.x()) <= 2.0f && Math.abs(aPos.z()) <= 2.0f) {
+				resolveCollision(ga);
+			}
+		}
+	}
+
+	public void checkNPCCollision(Vector3f position) {
+		if (poweredUp) {
+			
+		}
+	}
+
+	public void resolveCollision(GhostAvatar ga) {
+		if (poweredUp) {
+			UUID ghostID = ga.getID();
+			if (protClient != null) {
+				protClient.sendEatenMessage(ghostID);
+			}
+		}
+	}
+
+	public void getCaught(GhostAvatar ga) {
+		if (!poweredUp) {
+			remainingLives--;
+			caught = true;
+			protClient.sendCaughtMessage(remainingLives);
+		} else {
+			resolveCollision(ga);
+		}
+	}
+
+	public void reset(int lives) {
+		remainingLives = lives;
+		caught = false;
+
+		if (characterName == "tageman") {
+			physicsEngine.removeObject(avatar.getPhysicsObject().getUID());
+			avatar.setLocalTranslation((new Matrix4f()).translation(0, 1, 25));
+			initializeAvatarPhysics(avatar, 10f);
+		} else {
+			eaten();
+		}
+	}
+
+	public void eaten() {
+		physicsEngine.removeObject(avatar.getPhysicsObject().getUID());
+			avatar.setLocalTranslation((new Matrix4f()).translation(0, 0, 0));
+			initializeAvatarPhysics(avatar, 10f);
+		eaten = true;
+		inPlay = false;
+		respawnTime = 5000;
+		closeGate();
+	}
+
+	private void respawnGhost() {
+		if (respawnTime > 0) {
+			respawnTime = respawnTime - (currFrameTime - lastFrameTime);
+		} else {
+			openGate();
+			inPlay = true;
+		}
+		
+	}
+
+	public void victory(int who) {
+		//0 tageman won
+		//1 ghosts won
+		isGameOngoing = false;
+		inPlay = false;
+		if (characterName == "tageman") {
+			protClient.sendDeleteNPC();
+		}
+		
+		if (who == 0) {
+			dispStr2 = "TAGEMAN WON!!!";
+		} else if (who == 1) {
+			dispStr2 = "GHOSTS WON!!!";
+		}
+	}
+
 	// ---------- NETWORKING SECTION ----------------
 
 	public GameObject getAvatar() {return avatar;}
@@ -876,6 +993,8 @@ public class MyGame extends VariableFrameRateGame
 	public void setHUD2string(String s) {dispStr2 = s;}
 
 	public void setLives(int lives) { remainingLives = lives; }
+
+	public void setGameOngoing(boolean b) { isGameOngoing = b; }
 
 
 	public void setPowerup(UUID ghostID, boolean powerup) { 
