@@ -592,7 +592,7 @@ public class MyGame extends VariableFrameRateGame
 			}
 
 			// create pellets
-			initializePelletz();
+			initializePellets();
 		}
 	}
 
