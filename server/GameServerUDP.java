@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.UUID;
 
+import tage.networking.IGameConnection.ProtocolType;
 import tage.networking.server.GameConnectionServer;
 import tage.networking.server.IClientInfo;
 
@@ -181,6 +182,12 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 				System.out.println("deleting NPC");
 				sendDeleteNPCMessage(clientID);
 			}
+
+			if (messageTokens[0].compareTo("pelletCount") == 0) {
+				String count = messageTokens[1];
+				sendPelletCountMessage(count);
+			}
+
 
 		}
 	}
@@ -490,4 +497,13 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 		npcCtrl.setActive(false);
 	}
 
+	public void sendPelletCountMessage(String count) {
+		try {
+			String message = "pelletCount," + count;
+			sendPacketToAll(message);
+		} catch (IOException e) {
+			System.out.println("Failed to send pellet count update");
+			e.printStackTrace();
+		}
+	}
 }
