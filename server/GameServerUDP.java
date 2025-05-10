@@ -100,7 +100,8 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 				UUID remoteID = UUID.fromString(messageTokens[2]);
 				String[] pos = {messageTokens[3], messageTokens[4], messageTokens[5]};
 				String character = messageTokens[6];
-				sendDetailsForMessage(clientID, remoteID, pos, character);
+				String[] forward = {messageTokens[7], messageTokens[8], messageTokens[9]};
+				sendDetailsForMessage(clientID, remoteID, pos, character, forward);
 			}
 			
 			// MOVE --- Case where server receives a move message
@@ -309,13 +310,16 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 	// remoteId is used to send this message to the proper client. 
 	// Message Format: (dsfr,remoteId,x,y,z) where x, y, and z represent the position.
 
-	public void sendDetailsForMessage(UUID clientID, UUID remoteId, String[] position, String character)
+	public void sendDetailsForMessage(UUID clientID, UUID remoteId, String[] position, String character, String[] forward)
 	{	try 
 		{	String message = new String("dsfr," + remoteId.toString());
 			message += "," + position[0];
 			message += "," + position[1];
 			message += "," + position[2];	
 			message += "," + character;
+			message += "," + forward[0];
+			message += "," + forward[1];
+			message += "," + forward[2];
 			sendPacket(message, clientID);
 			System.out.println(character + " gave details");
 		} 
