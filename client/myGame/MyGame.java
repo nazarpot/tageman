@@ -463,6 +463,7 @@ public class MyGame extends VariableFrameRateGame
 				if (joined == true && characterName.equals("tageman") && !isGameOngoing) {
 					startGame();
 				}
+				break;
 			case KeyEvent.VK_G:
 				if (isGateOpen) {
 					closeGate();
