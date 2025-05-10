@@ -153,6 +153,10 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 				sendCaughtMessage(clientID, lives);
 			}
 
+			if (messageTokens[0].compareTo("eatNPC") == 0) {
+				npcCtrl.start(this);
+			}
+
 			//CREATE NPC
 			if (messageTokens[0].compareTo("createNPC") == 0) {
 				UUID clientID = UUID.fromString(messageTokens[1]);

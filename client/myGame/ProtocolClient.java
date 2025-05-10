@@ -1,5 +1,6 @@
 package myGame;
 
+import java.lang.Math;
 import java.awt.Color;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -142,6 +143,11 @@ public class ProtocolClient extends GameConnectionClient
 				UUID ghostID = UUID.fromString(messageTokens[1]);
 				Boolean powerup = Boolean.parseBoolean(messageTokens[2]);
 				game.setPowerup(ghostID, powerup);
+				if (powerup) {
+					ghostNPC.setTextureImage(game.getScaredTexture());
+				} else {
+					ghostNPC.setTextureImage(game.getNPCtexture());
+				}
 			}
 
 			// EATEN message
@@ -190,8 +196,24 @@ public class ProtocolClient extends GameConnectionClient
 					Float.parseFloat(messageTokens[2]),
 					Float.parseFloat(messageTokens[3])
 				);
-				
-				ghostNPC.setPosition(ghostPosition);
+
+				//check if tageman collides with NPC
+				if (game.getCharacterName() == "tageman") {
+					Vector3f tagemanPos = game.getAvatar().getWorldLocation();
+					if (Math.abs(tagemanPos.x() - ghostPosition.x()) <= 1 && Math.abs(tagemanPos.z() - ghostPosition.z()) <= 1) {
+						game.setLives(game.getLives() - 1);
+						sendCaughtMessage(game.getLives());
+						
+					} else if (Math.abs(tagemanPos.x() - ghostPosition.x()) <= 2 && Math.abs(tagemanPos.z() - ghostPosition.z()) <= 2) {
+						if (game.getPoweredUp()) {
+							sendEatNPCMessage();
+						}		
+					} else {
+						ghostNPC.setPosition(ghostPosition);
+					}
+				} else {
+					ghostNPC.setPosition(ghostPosition);
+				}
 			}
 
 			//NPC to look at tageman
@@ -366,6 +388,16 @@ public class ProtocolClient extends GameConnectionClient
 	private void createGhostNPC(Vector3f position) throws IOException {
 		if (ghostNPC == null) {
 			ghostNPC = new GhostNPC(0, game.getNPCshape(), game.getNPCtexture(), position);
+		}
+	}
+
+	public void sendEatNPCMessage() {
+		try {
+			String message = new String("eatNPC");
+			sendPacket(message);
+		} catch (IOException e) {
+			System.out.println("failure to eat NPC");
+			e.printStackTrace();
 		}
 	}
 
