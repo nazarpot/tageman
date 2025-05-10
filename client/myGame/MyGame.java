@@ -94,7 +94,7 @@ public class MyGame extends VariableFrameRateGame
 
 	private double prevCountdown, countdown;
 
-	private int remainingLives = 3;
+	private int remainingLives = 5;
 	private int remainingPellets;
 	private boolean powerup = false;
 
