@@ -107,7 +107,7 @@ public class ProtocolClient extends GameConnectionClient
 				// Send the local client's avatar's information
 				// Parse out the id into a UUID
 				UUID ghostID = UUID.fromString(messageTokens[1]);
-				sendDetailsForMessage(ghostID, game.getPlayerPosition(), game.getCharacterName());
+				sendDetailsForMessage(ghostID, game.getPlayerPosition(), game.getCharacterName(), game.getAvatar().getLocalForwardVector());
 			}
 			
 			// Handle MOVE message
@@ -291,13 +291,16 @@ public class ProtocolClient extends GameConnectionClient
 	// from the server.
 	// Message Format: (dsfr,remoteId,localId,x,y,z) where x, y, and z represent the position.
 
-	public void sendDetailsForMessage(UUID remoteId, Vector3f position, String character)
+	public void sendDetailsForMessage(UUID remoteId, Vector3f position, String character, Vector3f forward)
 	{	try 
 		{	String message = new String("dsfr," + remoteId.toString() + "," + id.toString());
 			message += "," + position.x();
 			message += "," + position.y();
 			message += "," + position.z();
 			message += "," + character;
+			message += "," + forward.x();
+			message += "," + forward.y();
+			message += "," + forward.z();
 			
 			sendPacket(message);
 
