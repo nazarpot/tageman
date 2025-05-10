@@ -10,6 +10,7 @@ import org.joml.*;
 
 import tage.*;
 import tage.shapes.*;
+import tage.networking.IGameConnection.ProtocolType;
 import tage.networking.client.GameConnectionClient;
 
 public class ProtocolClient extends GameConnectionClient
@@ -203,7 +204,12 @@ public class ProtocolClient extends GameConnectionClient
 				);
 				ghostNPC.lookAtTageman(tagemanPosition);
 			}
-		}	
+
+			if (messageTokens[0].compareTo("pelletCount") == 0) {
+				int count = Integer.parseInt(messageTokens[1]);
+				game.setPelletCount(count);
+			}
+		}
 	}
 	
 	// The initial message from the game client requesting to join the 
@@ -381,5 +387,14 @@ public class ProtocolClient extends GameConnectionClient
 	private void deleteNPC() {
 		(game.getEngine().getSceneGraph()).removeGameObject(ghostNPC);
 		ghostNPC = null;
+	}
+
+	public void sendPelletCount(int count) {
+		try {
+			String message = new String("pelletCount," + count);
+			sendPacket(message);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

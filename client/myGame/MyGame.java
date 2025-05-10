@@ -313,7 +313,7 @@ public class MyGame extends VariableFrameRateGame
 		String counterStr = Integer.toString(counter);
 		String dispStr1 = "";
 		if (isGameOngoing) {
-			dispStr1 = "Lives: " + remainingLives;
+			dispStr1 = "Lives: " + remainingLives + " | Pellets: " + numPellets;
 		}
 		Vector3f hud1Color = new Vector3f(1,0,0);
 		(engine.getHUDmanager()).setHUD1(dispStr1, hud1Color, 15, 15);
@@ -336,11 +336,6 @@ public class MyGame extends VariableFrameRateGame
 			float stepSize = 0.05f;
 			float moveSpeed = 2f;
 
-			//if(!pelletsInitialized){
-			//	initializePellets();
-			//	pelletsInitialized = true;
-			//}
-		
 			if (isMovingForward || isMovingBackward) {
 				Vector4f moveDirection = isMovingForward ?
 					new Vector4f(0f, 0f, 1f, 0f) :
@@ -932,27 +927,32 @@ public class MyGame extends VariableFrameRateGame
 				// ----- NORMAL PELLET COLLISIONS -----
 				for (int k = 0; k < normalPellets.size(); k++) {
 					GameObject normalPellet = normalPellets.get(k);
+					PhysicsObject po = normalPellet.getPhysicsObject();
+					if (po == null) continue;
+
 					int avatarUID = avatar.getPhysicsObject().getUID();
-					int pelletUID = normalPellet.getPhysicsObject().getUID();
+					int pelletUID = po.getUID();
 
 					boolean tagemanHitPellet = (
 						(obj1.getUID() == avatarUID && obj2.getUID() == pelletUID) ||
 						(obj2.getUID() == avatarUID && obj1.getUID() == pelletUID)
 					);
-
+						
 					for (int j = 0; j < manifold.getNumContacts(); j++) {
 						contactPoint = manifold.getContactPoint(j);
 						if (contactPoint.getDistance() < 0.0f && tagemanHitPellet) {
 							System.out.println("Normal pellet eaten!");
 							normalPellet.getRenderStates().disableRendering();
 							engine.getSceneGraph().removeGameObject(normalPellet);
-							physicsEngine.removeObject(normalPellet.getPhysicsObject().getUID());
-							normalPellets.remove(k);
+							physicsEngine.removeObject(pelletUID);
 							numPellets--;
 							System.out.printf("Pellets remaining %d%n", numPellets);
-
+							
 							if (numPellets == 0) {
 								System.out.println("All pellets eaten!");
+							}
+							if (protClient != null) {
+								protClient.sendPelletCount(numPellets);
 							}
 							break;
 						}
@@ -967,7 +967,7 @@ public class MyGame extends VariableFrameRateGame
 							javax.vecmath.Vector3f posTageman = new javax.vecmath.Vector3f();
 							javax.vecmath.Vector3f posBlinky = new javax.vecmath.Vector3f();
 							((JBulletPhysicsObject) tageP).getRigidBody().getCenterOfMassPosition(posTageman);
-						((JBulletPhysicsObject) blinkyP).getRigidBody().getCenterOfMassPosition(posBlinky);
+							((JBulletPhysicsObject) blinkyP).getRigidBody().getCenterOfMassPosition(posBlinky);
 
 							javax.vecmath.Vector3f bounceDir = new javax.vecmath.Vector3f();
 							bounceDir.sub(posTageman, posBlinky);
@@ -1244,6 +1244,7 @@ public class MyGame extends VariableFrameRateGame
 
 	public void setGameOngoing(boolean b) { isGameOngoing = b; }
 
+	public void setPelletCount(int count) { numPellets = count; }
 
 	public void setPowerup(UUID ghostID, boolean powerup) { 
 		this.powerup = powerup; 
