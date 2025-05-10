@@ -205,12 +205,6 @@ public class MyGame extends VariableFrameRateGame
 		terrain.setHeightMap(terrainT);
 		terrain.getRenderStates().setTiling(1);
 		terrain.getRenderStates().setTileFactor(10);
-
-		pellet = new GameObject(GameObject.root(), pelletS);
-		initialTranslation = (new Matrix4f()).translation(0, .5f, 0);
-		pellet.setLocalTranslation(initialTranslation);
-		initialScale = (new Matrix4f()).scaling(.1f);
-		pellet.setLocalScale(initialScale);
 		
 		// Set ghost shape for NPC instantiation
 		npcShape = pacmanGhostS;
@@ -268,8 +262,6 @@ public class MyGame extends VariableFrameRateGame
 		//initializeAvatarPhysics(blinky, 10f);
 
 		initilializeWallPhysics();
-
-		initializePellets();
 
 		// ------------- camera setup -------------
 		(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0, 0, 5));
@@ -597,8 +589,11 @@ public class MyGame extends VariableFrameRateGame
 				powerP.setBounciness(0.8f);
 				powerPellet.setPhysicsObject(powerP);
 			
+			}
+
+			// create pellets
+			initializePelletz();
 		}
-	}
 	}
 
 	public void confirmJoin() {
@@ -1255,12 +1250,16 @@ public class MyGame extends VariableFrameRateGame
 
 	public ObjShape getNPCshape() { return npcShape; }
 	public TextureImage getNPCtexture() { return npcTex; }
+	public TextureImage getScaredTexture() { return scaredGhostT; }
 
 	public void setHUD2string(String s) {dispStr2 = s;}
 
+	public  int getLives() { return remainingLives; }
 	public void setLives(int lives) { remainingLives = lives; }
 
 	public void setGameOngoing(boolean b) { isGameOngoing = b; }
+
+	public boolean getPoweredUp() { return poweredUp; }
 
 	public void setPelletCount(int count) { numPellets = count; }
 
