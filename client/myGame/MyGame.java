@@ -23,6 +23,7 @@ import java.awt.image.BufferedImage;
 
 import java.io.*;
 import java.util.*;
+import java.util.List;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -48,11 +49,12 @@ public class MyGame extends VariableFrameRateGame
 	private Vector<GameObject> avatarSelection = new Vector<GameObject>();
 	private String[] characterNames = {"tageman", "blinky", "pinky", "inky", "clyde"};
 	private String characterName;
-	private int selection = 0;
+	private int selection = 0, numPellets = 0;
 
 	private GameObject avatar, terrain;
 	private GameObject tageman, dol, blinky, pinky, inky, clyde, pellet;
 	private Vector<GameObject> powerPellets = new Vector<>();
+	private Vector<GameObject> normalPellets = new Vector<>();
 	private ObjShape dolS, ghostS, pacmanGhostS, terrainS, pelletS;
 	private TextureImage tageTX, ghostT, terrainT, mazeTx;
 	private TextureImage blinkyT, pinkyT, inkyT, clydeT, casperT, scaredGhostT;
@@ -60,7 +62,10 @@ public class MyGame extends VariableFrameRateGame
 	private Light light1;
 	private PhysicsEngine physicsEngine;
 	private PhysicsObject pelletP, tageP, blinkyP, pinkyP, inkyP, clydeP, terrainP;
-	private PhysicsObject wall1, wall2, wall3, wall4, wall5, wall6, wall7, wall8, wall9, wall10, wall11, wall12, wall13, wall14, wall15, wall16, wall17, wall18, wall19, wall20, wall21, wall22, wall23, wall24, wall25, wall26, wall27, wall28, wall29, wall30, wall31, wall32, wall33, wall34, wall35, wall36, wall37, wall38, wall39, wall40, wall41, wall42, gate;
+	private PhysicsObject wall1, wall2, wall3, wall4, wall5, wall6, wall7, wall8, wall9, wall10;
+	private PhysicsObject wall11, wall12, wall13, wall14, wall15, wall16, wall17, wall18, wall19;
+	private PhysicsObject wall20, wall21, wall22, wall23, wall24, wall25, wall26, wall27, wall28;
+	private PhysicsObject wall29, wall30, wall31, wall32, wall33, wall34, wall35, wall36, wall37, wall38, wall39, wall40, wall41, wall42, gate;
 	private float vals[] = new float[16];
 
 	private ObjShape npcShape;
@@ -74,7 +79,7 @@ public class MyGame extends VariableFrameRateGame
 	private ProtocolType serverProtocol;
 	private ProtocolClient protClient;
 	private boolean isClientConnected = false, alreadyMoving = false, isMovingForward = false, isMovingBackward = false;
-	private boolean isGameOngoing = false, isGateOpen = false;
+	private boolean isGameOngoing = false, isGateOpen = false, pelletsInitialized=false;
 	private boolean gameStarted = false;
 
 	private int mapWidth, mapHeight;
@@ -244,20 +249,14 @@ public class MyGame extends VariableFrameRateGame
 		float planeConstant = 0f;
 		float pelletRadius = 0.1f;
 
-		Matrix4f translation = new Matrix4f(pellet.getLocalTranslation());
-		tempTransform = toDoubleArray(translation.get(vals));
-		pelletP = (engine.getSceneGraph()).addPhysicsSphere(0f, tempTransform, pelletRadius);
-		pelletP.setBounciness(0.8f);
-		pellet.setPhysicsObject(pelletP);
-
-		translation = new Matrix4f(terrain.getLocalTranslation());
+		Matrix4f translation = new Matrix4f(terrain.getLocalTranslation());
 		tempTransform = toDoubleArray(translation.get(vals));
 		terrainP = (engine.getSceneGraph()).addPhysicsStaticPlane(tempTransform, upVector, planeConstant);
 		terrain.setPhysicsObject(terrainP);
 
 		//initializeAvatarPhysics(blinky, 10f);
 
-		initilializeWallPhysics();
+		//initilializeWallPhysics();
 
 		// ------------- camera setup -------------
 		(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0, 0, 5));
@@ -321,11 +320,16 @@ public class MyGame extends VariableFrameRateGame
 		// update sound
 		hereSound.setLocation(tageman.getWorldLocation());
 		setEarParameters();
-
+		
 		if (joined) {
 			float radiusOffset = 0.5f;
 			float stepSize = 0.05f;
 			float moveSpeed = 2f;
+
+			if(!pelletsInitialized){
+				initializePellets();
+				pelletsInitialized = true;
+			}
 		
 			if (isMovingForward || isMovingBackward) {
 				Vector4f moveDirection = isMovingForward ?
@@ -419,13 +423,13 @@ public class MyGame extends VariableFrameRateGame
 			case KeyEvent.VK_ENTER:
 				if (!joined) {
 					characterName = characterNames[selection];
-				joinGame(characterName);
+					joinGame(characterName);
 
-				im = engine.getInputManager();
-				String gpName = im.getFirstGamepadName();
-				String keyboardName = im.getKeyboardName();
-				Camera c = (engine.getRenderSystem().getViewport("MAIN").getCamera());
-				orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
+					im = engine.getInputManager();
+					String gpName = im.getFirstGamepadName();
+					String keyboardName = im.getKeyboardName();
+					Camera c = (engine.getRenderSystem().getViewport("MAIN").getCamera());
+					orbitController = new CameraOrbitController(c, avatar, gpName, keyboardName, engine);
 				}
 				
 				break;
@@ -459,6 +463,8 @@ public class MyGame extends VariableFrameRateGame
 		super.keyPressed(e);
 	}
 
+	
+
 	private void joinGame(String character) {
 		setupNetworking(character);
 
@@ -466,6 +472,43 @@ public class MyGame extends VariableFrameRateGame
 
 		setUpGame();
 	}
+
+	public void initializePellets() {
+    float pelletRadius = 0.1f;
+    float pelletScale = 0.1f;
+    float yOffset = 0.5f;
+
+    float spacing = 12.0f;
+    float minX = -50f, maxX = 50f;
+    float minZ = -50f, maxZ = 50f;
+
+    for (float x = minX; x <= maxX; x += spacing) {
+        for (float z = minZ; z <= maxZ; z += spacing) {
+            float height = terrain.getHeight(x, z);
+
+            if (height == 0.0f) {
+                GameObject pellet = new GameObject(GameObject.root(), pelletS);
+                pellet.setLocalTranslation(new Matrix4f().translation(x, height + yOffset, z));
+                pellet.setLocalScale(new Matrix4f().scaling(pelletScale));
+
+                double[] pelletTransform = toDoubleArray(pellet.getLocalTranslation().get(vals));
+                PhysicsObject pelletPhysics = engine.getSceneGraph().addPhysicsSphere(0f, pelletTransform, pelletRadius);
+                pellet.setPhysicsObject(pelletPhysics);
+
+                // Add to list for collision checking
+                normalPellets.add(pellet);
+				numPellets++;
+            }
+        }
+    }
+	System.out.printf("Total pellets: %d%n", numPellets);
+	System.out.printf("Elements in vector pellets: %d%n", normalPellets.size()
+);
+}
+
+
+	
+
 
 	private void setUpGame() {
 		initializeAvatarPhysics(avatar, 10f);
@@ -518,8 +561,9 @@ public class MyGame extends VariableFrameRateGame
 				PhysicsObject powerP = (engine.getSceneGraph()).addPhysicsSphere(0f, tempTransform, 1.0f);
 				powerP.setBounciness(0.8f);
 				powerPellet.setPhysicsObject(powerP);
-			}
+			
 		}
+	}
 	}
 
 	public void confirmJoin() {
@@ -579,6 +623,7 @@ public class MyGame extends VariableFrameRateGame
 	public void setMovingBackward(boolean value) {
 		isMovingBackward = value;
 	}
+
 
 	// ------------------ UTILITY FUNCTIONS used by physics
 	public void initilializeWallPhysics() {
@@ -795,64 +840,100 @@ public class MyGame extends VariableFrameRateGame
 		}
 		return ret;
 	}
+	
 
 	private void checkForCollisions() {
-		com.bulletphysics.dynamics.DynamicsWorld dynamicsWorld;
-		com.bulletphysics.collision.broadphase.Dispatcher dispatcher;
-		com.bulletphysics.collision.narrowphase.PersistentManifold manifold;
-		com.bulletphysics.dynamics.RigidBody object1, object2;
-		com.bulletphysics.collision.narrowphase.ManifoldPoint contactPoint;
-		dynamicsWorld = ((JBulletPhysicsEngine)physicsEngine).getDynamicsWorld();
-		dispatcher = dynamicsWorld.getDispatcher();
-		int manifoldCount = dispatcher.getNumManifolds();
-		for (int i=0; i<manifoldCount; i++) {
-			manifold = dispatcher.getManifoldByIndexInternal(i);
-			if (manifold != null) {
-				object1 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody0();
-			object2 = (com.bulletphysics.dynamics.RigidBody)manifold.getBody1();
+	com.bulletphysics.dynamics.DynamicsWorld dynamicsWorld;
+	com.bulletphysics.collision.broadphase.Dispatcher dispatcher;
+	com.bulletphysics.collision.narrowphase.PersistentManifold manifold;
+	com.bulletphysics.dynamics.RigidBody object1, object2;
+	com.bulletphysics.collision.narrowphase.ManifoldPoint contactPoint;
+
+	dynamicsWorld = ((JBulletPhysicsEngine) physicsEngine).getDynamicsWorld();
+	dispatcher = dynamicsWorld.getDispatcher();
+	int manifoldCount = dispatcher.getNumManifolds();
+
+	for (int i = 0; i < manifoldCount; i++) {
+		manifold = dispatcher.getManifoldByIndexInternal(i);
+		if (manifold != null) {
+			object1 = (com.bulletphysics.dynamics.RigidBody) manifold.getBody0();
+			object2 = (com.bulletphysics.dynamics.RigidBody) manifold.getBody1();
 			JBulletPhysicsObject obj1 = JBulletPhysicsObject.getJBulletPhysicsObject(object1);
 			JBulletPhysicsObject obj2 = JBulletPhysicsObject.getJBulletPhysicsObject(object2);
 
+			// ----- POWER PELLET COLLISIONS -----
 			for (int k = 0; k < powerPellets.size(); k++) {
 				GameObject powerPellet = powerPellets.elementAt(k);
 				int avatarUID = avatar.getPhysicsObject().getUID();
 				int pelletUID = powerPellet.getPhysicsObject().getUID();
 
+				boolean tagemanHitPower = (
+					(obj1.getUID() == avatarUID && obj2.getUID() == pelletUID) ||
+					(obj2.getUID() == avatarUID && obj1.getUID() == pelletUID)
+				);
+
+				for (int j = 0; j < manifold.getNumContacts(); j++) {
+					contactPoint = manifold.getContactPoint(j);
+					if (contactPoint.getDistance() < 0.0f && tagemanHitPower) {
+						System.out.println("Power pellet eaten!");
+						powerPellet.getRenderStates().disableRendering();
+						engine.getSceneGraph().removeGameObject(powerPellet);
+						physicsEngine.removeObject(powerPellet.getPhysicsObject().getUID());
+						usePowerPellet(true);
+						break;
+					}
+				}
+			}
+
+			// ----- NORMAL PELLET COLLISIONS -----
+			for (int k = 0; k < normalPellets.size(); k++) {
+				GameObject normalPellet = normalPellets.get(k);
+				int avatarUID = avatar.getPhysicsObject().getUID();
+				int pelletUID = normalPellet.getPhysicsObject().getUID();
+
 				boolean tagemanHitPellet = (
-				(obj1.getUID() == avatarUID && obj2.getUID() == pelletUID) ||
-				(obj2.getUID() == avatarUID && obj1.getUID() == pelletUID)
+					(obj1.getUID() == avatarUID && obj2.getUID() == pelletUID) ||
+					(obj2.getUID() == avatarUID && obj1.getUID() == pelletUID)
 				);
 
 				for (int j = 0; j < manifold.getNumContacts(); j++) {
 					contactPoint = manifold.getContactPoint(j);
 					if (contactPoint.getDistance() < 0.0f && tagemanHitPellet) {
-						System.out.println("Pellet eaten!");
-						powerPellet.getRenderStates().disableRendering();
-						(engine.getSceneGraph()).removeGameObject(powerPellet);
-						physicsEngine.removeObject(powerPellet.getPhysicsObject().getUID());
-						usePowerPellet(true);
+						System.out.println("Normal pellet eaten!");
+						normalPellet.getRenderStates().disableRendering();
+						engine.getSceneGraph().removeGameObject(normalPellet);
+						physicsEngine.removeObject(normalPellet.getPhysicsObject().getUID());
+						normalPellets.remove(k);
+						numPellets--;
+						System.out.printf("Pellets remaining %d%n", numPellets);
+
+						if (numPellets == 0) {
+							System.out.println("All pellets eaten! Game complete.");
+						}
 						break;
 					}
-					if (contactPoint.getDistance() < 0.0f && ((obj1 == tageP && obj2 == blinkyP) || (obj1 == blinkyP && obj2 == tageP))) {
-						// Apply bounce forces
-						// Get positions
+				}
+			}
+
+			// ----- AVATAR-TO-GHOST BOUNCE LOGIC -----
+			if ((obj1 == tageP && obj2 == blinkyP) || (obj1 == blinkyP && obj2 == tageP)) {
+				for (int j = 0; j < manifold.getNumContacts(); j++) {
+					contactPoint = manifold.getContactPoint(j);
+					if (contactPoint.getDistance() < 0.0f) {
 						javax.vecmath.Vector3f posTageman = new javax.vecmath.Vector3f();
 						javax.vecmath.Vector3f posBlinky = new javax.vecmath.Vector3f();
 						((JBulletPhysicsObject) tageP).getRigidBody().getCenterOfMassPosition(posTageman);
 						((JBulletPhysicsObject) blinkyP).getRigidBody().getCenterOfMassPosition(posBlinky);
 
+						javax.vecmath.Vector3f bounceDir = new javax.vecmath.Vector3f();
+						bounceDir.sub(posTageman, posBlinky);
+						bounceDir.normalize();
 
-						// Direction from Blinky to Tageman
-						javax.vecmath.Vector3f bounceDirection = new javax.vecmath.Vector3f();
-						bounceDirection.sub(posTageman, posBlinky); // Tageman - Blinky
-						bounceDirection.normalize();
+						javax.vecmath.Vector3f impulseToTageman = new javax.vecmath.Vector3f(bounceDir);
+						impulseToTageman.scale(.5f);
 
-						// Now apply impulse to both
-						javax.vecmath.Vector3f impulseToTageman = new javax.vecmath.Vector3f(bounceDirection);
-						impulseToTageman.scale(.5f); //force
-
-						javax.vecmath.Vector3f impulseToBlinky = new javax.vecmath.Vector3f(bounceDirection);
-						impulseToBlinky.scale(-.5f); //opposite direction
+						javax.vecmath.Vector3f impulseToBlinky = new javax.vecmath.Vector3f(bounceDir);
+						impulseToBlinky.scale(-.5f);
 
 						((JBulletPhysicsObject) tageP).getRigidBody().applyCentralImpulse(impulseToTageman);
 						((JBulletPhysicsObject) blinkyP).getRigidBody().applyCentralImpulse(impulseToBlinky);
@@ -861,12 +942,10 @@ public class MyGame extends VariableFrameRateGame
 					}
 				}
 			}
-			
-			
-			}
-			
 		}
 	}
+}
+
 
 	public void initializeAvatarPhysics(GameObject character, float mass) {
 		float radius = 0.5f;
