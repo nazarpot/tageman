@@ -259,7 +259,9 @@ public class MyGame extends VariableFrameRateGame
 
 		//initializeAvatarPhysics(blinky, 10f);
 
-		initilializeWallPhysics();
+		//initilializeWallPhysics();
+
+		initializePelletz();
 
 		// ------------- camera setup -------------
 		(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0, 0, 5));
@@ -334,10 +336,10 @@ public class MyGame extends VariableFrameRateGame
 			float stepSize = 0.05f;
 			float moveSpeed = 2f;
 
-			if(!pelletsInitialized){
-				initializePellets();
-				pelletsInitialized = true;
-			}
+			//if(!pelletsInitialized){
+			//	initializePellets();
+			//	pelletsInitialized = true;
+			//}
 		
 			if (isMovingForward || isMovingBackward) {
 				Vector4f moveDirection = isMovingForward ?
@@ -468,7 +470,6 @@ public class MyGame extends VariableFrameRateGame
 				}
 				break;
 		}
-		super.keyPressed(e);
 	}
 
 	
@@ -481,42 +482,59 @@ public class MyGame extends VariableFrameRateGame
 		setUpGame();
 	}
 
-	public void initializePellets() {
-    float pelletRadius = 0.1f;
-    float pelletScale = 0.1f;
-    float yOffset = 0.5f;
+	public void initializePelletz(){
+		pelletRow(-44f, 44f, 44.5f, 8.75f);//(x, x , fixed z)
+		pelletRow(-44f, -5.25f, -44.5f, 8.0f);
+		pelletRow(5.25f, 44f, -44.5f, 8.0f);
+		pelletRow(-44f, 44f, -32.375f, 5.8125f);
+		pelletRow(-44f, -5.25f, 16f, 8.0f);
+		pelletRow(5.25f, 44f, 16f, 8.0f);
+		pelletRow(-27f, 27f, 26f, 8.0f);
 
-    float spacing = 12.0f;
-    float minX = -50f, maxX = 50f;
-    float minZ = -50f, maxZ = 50f;
-
-    for (float x = minX; x <= maxX; x += spacing) {
-        for (float z = minZ; z <= maxZ; z += spacing) {
-            float height = terrain.getHeight(x, z);
-
-            if (height == 0.0f) {
-                GameObject pellet = new GameObject(GameObject.root(), pelletS);
-                pellet.setLocalTranslation(new Matrix4f().translation(x, height + yOffset, z));
-                pellet.setLocalScale(new Matrix4f().scaling(pelletScale));
-
-                double[] pelletTransform = toDoubleArray(pellet.getLocalTranslation().get(vals));
-                PhysicsObject pelletPhysics = engine.getSceneGraph().addPhysicsSphere(0f, pelletTransform, pelletRadius);
-                pellet.setPhysicsObject(pelletPhysics);
-
-                // Add to list for collision checking
-                normalPellets.add(pellet);
-				numPellets++;
-            }
-        }
-    }
-	System.out.printf("Total pellets: %d%n", numPellets);
-	System.out.printf("Elements in vector pellets: %d%n", normalPellets.size()
-);
-}
-
-
+		pelletCol(-38.7f, 38f, -26.625f, 10.0f);
+		pelletCol(-38.7f, 38f, 26.625f, 10.0f);
 	
+		System.out.printf("Total pellets: %d%n", numPellets);
+		System.out.printf("Elements in vector pellets: %d%n", normalPellets.size());
+	}
 
+	public void pelletRow(float startX, float endX, float fixedZ, float spacing) {
+		float pelletRadius = 0.1f;
+		float pelletScale = 0.1f;
+		float yOffset = 0.5f;
+
+		for (float x = startX; x <= endX; x += spacing) {
+			GameObject pellet = new GameObject(GameObject.root(), pelletS);
+			pellet.setLocalTranslation(new Matrix4f().translation(x, 0.5f, fixedZ));
+			pellet.setLocalScale(new Matrix4f().scaling(pelletScale));
+
+			double[] pelletTransform = toDoubleArray(pellet.getLocalTranslation().get(vals));
+			PhysicsObject pelletPhysics = engine.getSceneGraph().addPhysicsSphere(0f, pelletTransform, pelletRadius);
+			pellet.setPhysicsObject(pelletPhysics);
+
+			normalPellets.add(pellet);
+			numPellets++;
+		}
+	}
+
+	public void pelletCol(float startZ, float endZ, float fixedX, float spacing) {
+		float pelletRadius = 0.1f;
+		float pelletScale = 0.1f;
+		float yOffset = 0.5f;
+
+		for (float z = startZ; z <= endZ; z += spacing) {
+			GameObject pellet = new GameObject(GameObject.root(), pelletS);
+			pellet.setLocalTranslation(new Matrix4f().translation(fixedX, 0.5f, z));
+			pellet.setLocalScale(new Matrix4f().scaling(pelletScale));
+
+			double[] pelletTransform = toDoubleArray(pellet.getLocalTranslation().get(vals));
+			PhysicsObject pelletPhysics = engine.getSceneGraph().addPhysicsSphere(0f, pelletTransform, pelletRadius);
+			pellet.setPhysicsObject(pelletPhysics);
+
+			normalPellets.add(pellet);
+			numPellets++;
+		}
+	}
 
 	private void setUpGame() {
 		initializeAvatarPhysics(avatar, 10f);
@@ -869,108 +887,108 @@ public class MyGame extends VariableFrameRateGame
 	
 
 	private void checkForCollisions() {
-	com.bulletphysics.dynamics.DynamicsWorld dynamicsWorld;
-	com.bulletphysics.collision.broadphase.Dispatcher dispatcher;
-	com.bulletphysics.collision.narrowphase.PersistentManifold manifold;
-	com.bulletphysics.dynamics.RigidBody object1, object2;
-	com.bulletphysics.collision.narrowphase.ManifoldPoint contactPoint;
+		com.bulletphysics.dynamics.DynamicsWorld dynamicsWorld;
+		com.bulletphysics.collision.broadphase.Dispatcher dispatcher;
+		com.bulletphysics.collision.narrowphase.PersistentManifold manifold;
+		com.bulletphysics.dynamics.RigidBody object1, object2;
+		com.bulletphysics.collision.narrowphase.ManifoldPoint contactPoint;
 
-	dynamicsWorld = ((JBulletPhysicsEngine) physicsEngine).getDynamicsWorld();
-	dispatcher = dynamicsWorld.getDispatcher();
-	int manifoldCount = dispatcher.getNumManifolds();
+		dynamicsWorld = ((JBulletPhysicsEngine) physicsEngine).getDynamicsWorld();
+		dispatcher = dynamicsWorld.getDispatcher();
+		int manifoldCount = dispatcher.getNumManifolds();
 
-	for (int i = 0; i < manifoldCount; i++) {
-		manifold = dispatcher.getManifoldByIndexInternal(i);
-		if (manifold != null) {
-			object1 = (com.bulletphysics.dynamics.RigidBody) manifold.getBody0();
-			object2 = (com.bulletphysics.dynamics.RigidBody) manifold.getBody1();
-			JBulletPhysicsObject obj1 = JBulletPhysicsObject.getJBulletPhysicsObject(object1);
-			JBulletPhysicsObject obj2 = JBulletPhysicsObject.getJBulletPhysicsObject(object2);
+		for (int i = 0; i < manifoldCount; i++) {
+			manifold = dispatcher.getManifoldByIndexInternal(i);
+			if (manifold != null) {
+				object1 = (com.bulletphysics.dynamics.RigidBody) manifold.getBody0();
+				object2 = (com.bulletphysics.dynamics.RigidBody) manifold.getBody1();
+				JBulletPhysicsObject obj1 = JBulletPhysicsObject.getJBulletPhysicsObject(object1);
+				JBulletPhysicsObject obj2 = JBulletPhysicsObject.getJBulletPhysicsObject(object2);
 
-			// ----- POWER PELLET COLLISIONS -----
-			for (int k = 0; k < powerPellets.size(); k++) {
-				GameObject powerPellet = powerPellets.elementAt(k);
-				int avatarUID = avatar.getPhysicsObject().getUID();
-				int pelletUID = powerPellet.getPhysicsObject().getUID();
+				// ----- POWER PELLET COLLISIONS -----
+				for (int k = 0; k < powerPellets.size(); k++) {
+					GameObject powerPellet = powerPellets.elementAt(k);
+					int avatarUID = avatar.getPhysicsObject().getUID();
+					int pelletUID = powerPellet.getPhysicsObject().getUID();
 
-				boolean tagemanHitPower = (
-					(obj1.getUID() == avatarUID && obj2.getUID() == pelletUID) ||
-					(obj2.getUID() == avatarUID && obj1.getUID() == pelletUID)
-				);
+					boolean tagemanHitPower = (
+						(obj1.getUID() == avatarUID && obj2.getUID() == pelletUID) ||
+						(obj2.getUID() == avatarUID && obj1.getUID() == pelletUID)
+					);
 
-				for (int j = 0; j < manifold.getNumContacts(); j++) {
-					contactPoint = manifold.getContactPoint(j);
-					if (contactPoint.getDistance() < 0.0f && tagemanHitPower) {
-						System.out.println("Power pellet eaten!");
-						powerPellet.getRenderStates().disableRendering();
-						engine.getSceneGraph().removeGameObject(powerPellet);
-						physicsEngine.removeObject(powerPellet.getPhysicsObject().getUID());
-						usePowerPellet(true);
-						break;
-					}
-				}
-			}
-
-			// ----- NORMAL PELLET COLLISIONS -----
-			for (int k = 0; k < normalPellets.size(); k++) {
-				GameObject normalPellet = normalPellets.get(k);
-				int avatarUID = avatar.getPhysicsObject().getUID();
-				int pelletUID = normalPellet.getPhysicsObject().getUID();
-
-				boolean tagemanHitPellet = (
-					(obj1.getUID() == avatarUID && obj2.getUID() == pelletUID) ||
-					(obj2.getUID() == avatarUID && obj1.getUID() == pelletUID)
-				);
-
-				for (int j = 0; j < manifold.getNumContacts(); j++) {
-					contactPoint = manifold.getContactPoint(j);
-					if (contactPoint.getDistance() < 0.0f && tagemanHitPellet) {
-						System.out.println("Normal pellet eaten!");
-						normalPellet.getRenderStates().disableRendering();
-						engine.getSceneGraph().removeGameObject(normalPellet);
-						physicsEngine.removeObject(normalPellet.getPhysicsObject().getUID());
-						normalPellets.remove(k);
-						numPellets--;
-						System.out.printf("Pellets remaining %d%n", numPellets);
-
-						if (numPellets == 0) {
-							System.out.println("All pellets eaten! Game complete.");
+					for (int j = 0; j < manifold.getNumContacts(); j++) {
+						contactPoint = manifold.getContactPoint(j);
+						if (contactPoint.getDistance() < 0.0f && tagemanHitPower) {
+							System.out.println("Power pellet eaten!");
+							powerPellet.getRenderStates().disableRendering();
+							engine.getSceneGraph().removeGameObject(powerPellet);
+							physicsEngine.removeObject(powerPellet.getPhysicsObject().getUID());
+							usePowerPellet(true);
+							break;
 						}
-						break;
 					}
 				}
-			}
 
-			// ----- AVATAR-TO-GHOST BOUNCE LOGIC -----
-			if ((obj1 == tageP && obj2 == blinkyP) || (obj1 == blinkyP && obj2 == tageP)) {
-				for (int j = 0; j < manifold.getNumContacts(); j++) {
-					contactPoint = manifold.getContactPoint(j);
-					if (contactPoint.getDistance() < 0.0f) {
-						javax.vecmath.Vector3f posTageman = new javax.vecmath.Vector3f();
-						javax.vecmath.Vector3f posBlinky = new javax.vecmath.Vector3f();
-						((JBulletPhysicsObject) tageP).getRigidBody().getCenterOfMassPosition(posTageman);
+				// ----- NORMAL PELLET COLLISIONS -----
+				for (int k = 0; k < normalPellets.size(); k++) {
+					GameObject normalPellet = normalPellets.get(k);
+					int avatarUID = avatar.getPhysicsObject().getUID();
+					int pelletUID = normalPellet.getPhysicsObject().getUID();
+
+					boolean tagemanHitPellet = (
+						(obj1.getUID() == avatarUID && obj2.getUID() == pelletUID) ||
+						(obj2.getUID() == avatarUID && obj1.getUID() == pelletUID)
+					);
+
+					for (int j = 0; j < manifold.getNumContacts(); j++) {
+						contactPoint = manifold.getContactPoint(j);
+						if (contactPoint.getDistance() < 0.0f && tagemanHitPellet) {
+							System.out.println("Normal pellet eaten!");
+							normalPellet.getRenderStates().disableRendering();
+							engine.getSceneGraph().removeGameObject(normalPellet);
+							physicsEngine.removeObject(normalPellet.getPhysicsObject().getUID());
+							normalPellets.remove(k);
+							numPellets--;
+							System.out.printf("Pellets remaining %d%n", numPellets);
+
+							if (numPellets == 0) {
+								System.out.println("All pellets eaten!");
+							}
+							break;
+						}
+					}
+				}
+
+				// ----- AVATAR-TO-GHOST BOUNCE LOGIC -----
+				if ((obj1 == tageP && obj2 == blinkyP) || (obj1 == blinkyP && obj2 == tageP)) {
+					for (int j = 0; j < manifold.getNumContacts(); j++) {
+						contactPoint = manifold.getContactPoint(j);
+						if (contactPoint.getDistance() < 0.0f) {
+							javax.vecmath.Vector3f posTageman = new javax.vecmath.Vector3f();
+							javax.vecmath.Vector3f posBlinky = new javax.vecmath.Vector3f();
+							((JBulletPhysicsObject) tageP).getRigidBody().getCenterOfMassPosition(posTageman);
 						((JBulletPhysicsObject) blinkyP).getRigidBody().getCenterOfMassPosition(posBlinky);
 
-						javax.vecmath.Vector3f bounceDir = new javax.vecmath.Vector3f();
-						bounceDir.sub(posTageman, posBlinky);
-						bounceDir.normalize();
+							javax.vecmath.Vector3f bounceDir = new javax.vecmath.Vector3f();
+							bounceDir.sub(posTageman, posBlinky);
+							bounceDir.normalize();
 
-						javax.vecmath.Vector3f impulseToTageman = new javax.vecmath.Vector3f(bounceDir);
-						impulseToTageman.scale(.5f);
+							javax.vecmath.Vector3f impulseToTageman = new javax.vecmath.Vector3f(bounceDir);
+							impulseToTageman.scale(.5f);
 
-						javax.vecmath.Vector3f impulseToBlinky = new javax.vecmath.Vector3f(bounceDir);
-						impulseToBlinky.scale(-.5f);
+							javax.vecmath.Vector3f impulseToBlinky = new javax.vecmath.Vector3f(bounceDir);
+							impulseToBlinky.scale(-.5f);
 
-						((JBulletPhysicsObject) tageP).getRigidBody().applyCentralImpulse(impulseToTageman);
-						((JBulletPhysicsObject) blinkyP).getRigidBody().applyCentralImpulse(impulseToBlinky);
+							((JBulletPhysicsObject) tageP).getRigidBody().applyCentralImpulse(impulseToTageman);
+							((JBulletPhysicsObject) blinkyP).getRigidBody().applyCentralImpulse(impulseToBlinky);
 
-						System.out.println("Tageman and Blinky bounced!");
+							System.out.println("Tageman and Blinky bounced!");
+						}
 					}
 				}
 			}
 		}
 	}
-}
 
 
 	public void initializeAvatarPhysics(GameObject character, float mass) {
