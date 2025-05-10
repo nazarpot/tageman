@@ -256,7 +256,7 @@ public class MyGame extends VariableFrameRateGame
 
 		//initializeAvatarPhysics(blinky, 10f);
 
-		//initilializeWallPhysics();
+		initilializeWallPhysics();
 
 		// ------------- camera setup -------------
 		(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0, 0, 5));
