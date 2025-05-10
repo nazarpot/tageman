@@ -139,6 +139,20 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 				sendPowerMessages(clientID, powerUp);
 			}
 
+			// EATEN message
+			if (messageTokens[0].compareTo("eaten") == 0) {
+				UUID clientID = UUID.fromString(messageTokens[1]);
+				UUID recipientID = UUID.fromString(messageTokens[2]);
+				sendEatenMessage(recipientID);
+			}
+
+			// CAUGHT message
+			if (messageTokens[0].compareTo("caught") == 0) {
+				UUID clientID = UUID.fromString(messageTokens[1]);
+				String lives = messageTokens[2];
+				sendCaughtMessage(clientID, lives);
+			}
+
 			//CREATE NPC
 			if (messageTokens[0].compareTo("createNPC") == 0) {
 				UUID clientID = UUID.fromString(messageTokens[1]);
@@ -155,6 +169,13 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 				System.out.println("server got a needNPC message");
 				UUID clientID = UUID.fromString(messageTokens[1]);
 				//sendNPCstart(clientID);
+			}
+
+			// DELETE NPC
+			if (messageTokens[0].compareTo("deleteNPC") == 0) {
+				UUID clientID = UUID.fromString(messageTokens[1]);
+				System.out.println("deleting NPC");
+				sendDeleteNPCMessage(clientID);
 			}
 
 		}
@@ -352,10 +373,46 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 		}
 	}
 
-	// ---------- protocols for NPC's ---------------------------
-	public void handleNearTiming(UUID clientID) {
-		//npcCtrl.setNearFlag(true);
+	public void sendEatenMessage(UUID recipientID) {
+		try {
+			String message = new String("eaten," + recipientID.toString());
+			sendPacket(message, recipientID);
+		} catch (IOException e) {
+			System.out.println("failure to send eaten message");
+			e.printStackTrace();
+		}
 	}
+
+	public void sendCaughtMessage(UUID clientID, String l) {
+		int lives = Integer.parseInt(l);
+
+		if (lives < 0) {
+			sendVictoryMessage(clientID, 1);
+		} else {
+			try {
+				String message = new String("caught," + clientID.toString());
+				message += "," + l;
+				forwardPacketToAll(message, clientID);
+				sendPacket(message, clientID);
+			} catch (IOException e) {
+				System.out.println("failure to send caught message");
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void sendVictoryMessage(UUID clientID, int who) {
+		try {
+			String message = new String("victory," + clientID.toString());
+			message += "," + who;
+			forwardPacketToAll(message, clientID);
+			sendPacket(message, clientID);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	// ---------- protocols for NPC's ---------------------------
 
 	public void sendCheckForAvatarNear() {
 		try {
@@ -415,6 +472,18 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 			e.printStackTrace();
 		}
 		npcCtrl.start(this);
+	}
+
+	public void sendDeleteNPCMessage(UUID clientID) {
+		try {
+			System.out.println("server telling clients to delete NPC");
+			String message = new String("deleteNPC," + clientID.toString());
+			forwardPacketToAll(message, clientID);
+			sendPacket(message, clientID);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		npcCtrl.setActive(false);
 	}
 
 }

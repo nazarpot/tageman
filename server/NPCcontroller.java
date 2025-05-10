@@ -10,6 +10,7 @@ public class NPCcontroller {
     long lastThinkUpdateTime, lastTickUpdateTime;
     GameServerUDP server;
     double criteria;
+    boolean active = true;
 
     private boolean didOneSecPass;
 
@@ -28,7 +29,7 @@ public class NPCcontroller {
         setupBehaviorTree();
         Thread thread = new Thread(){
             public void run() {
-                while (true) {
+                while (active) {
                     long currentTime = System.nanoTime();
                     float elapsedThinkMilliSecs = (currentTime - lastThinkUpdateTime)/(1000000.0f);
                     float elapsedTickMilliSecs = (currentTime - lastTickUpdateTime)/(1000000.0f);
@@ -78,4 +79,6 @@ public class NPCcontroller {
         );
         npc.setTarget(position);
     }
+
+    public void setActive(boolean a) { active = a;}
 }
