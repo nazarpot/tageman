@@ -48,7 +48,7 @@ public class ProtocolClient extends GameConnectionClient
 					game.setIsConnected(true);
 					game.confirmJoin();
 					String character = messageTokens[2];
-					sendCreateMessage(game.getPlayerPosition(), character);
+					sendCreateMessage(game.getPlayerPosition(), character, game.getAvatar().getLocalForwardVector());
 				}
 				if(messageTokens[1].compareTo("failure") == 0)
 				{	System.out.println("join failure confirmed");
@@ -88,8 +88,13 @@ public class ProtocolClient extends GameConnectionClient
 
 				String character = messageTokens[5];
 
+				Vector3f forwardVector = new Vector3f (
+					Float.parseFloat(messageTokens[6]),
+					Float.parseFloat(messageTokens[7]), 
+					Float.parseFloat(messageTokens[8]));
+
 				try
-				{	ghostManager.createGhostAvatar(ghostID, character, ghostPosition);
+				{	ghostManager.createGhostAvatar(ghostID, character, ghostPosition, forwardVector);
 				}	catch (IOException e)
 				{	System.out.println("error creating ghost avatar");
 				}
@@ -262,13 +267,16 @@ public class ProtocolClient extends GameConnectionClient
 	// with the server.
 	// Message Format: (create,localId,x,y,z) where x, y, and z represent the position
 
-	public void sendCreateMessage(Vector3f position, String character)
+	public void sendCreateMessage(Vector3f position, String character, Vector3f forward)
 	{	try 
 		{	String message = new String("create," + id.toString());
 			message += "," + position.x();
 			message += "," + position.y();
 			message += "," + position.z();
 			message += "," + character;
+			message += "," + forward.x();
+			message += "," + forward.y();
+			message += "," + forward.z();
 			
 			sendPacket(message);
 

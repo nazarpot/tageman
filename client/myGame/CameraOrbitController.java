@@ -25,7 +25,7 @@ public class CameraOrbitController {
         camera = cam;
         avatar = av;
         cameraAzimuth = 0.0f;
-        cameraElevation = 10.0f;
+        cameraElevation = 15.0f;
         cameraRadius = 2.75f;
         setupInputs(gpName, kbName);
         updateCameraPosition();
@@ -88,7 +88,7 @@ public class CameraOrbitController {
         camera.lookAt(avatar);
 
         cameraAzimuth = 0;
-        cameraElevation = 10;
+        cameraElevation = 15;
         cameraRadius = 2.75f;
         camera.lookAt(avatar);
     }
@@ -188,7 +188,7 @@ public class CameraOrbitController {
             } else {
                 if (direction > 0) {
                     cameraElevation = 90;  
-                    cameraRadius = 20;
+                    cameraRadius = 10;
                 } else {
                     cameraElevation = 155;
                 }

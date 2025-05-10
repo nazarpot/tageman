@@ -19,13 +19,14 @@ public class GhostManager
 	{	game = (MyGame)vfrg;
 	}
 	
-	public void createGhostAvatar(UUID id, String name, Vector3f position) throws IOException
+	public void createGhostAvatar(UUID id, String name, Vector3f position, Vector3f forwardVector) throws IOException
 	{	System.out.println("adding ghost with ID --> " + id);
 		ObjShape s = game.getGhostShape(name);
 		TextureImage t = game.getGhostTexture(name);
 		GhostAvatar newAvatar = new GhostAvatar(id, s, t, position, name);
 		Matrix4f initialScale = (new Matrix4f()).scaling(0.5f);
 		newAvatar.setLocalScale(initialScale);
+		newAvatar.lookAt(position.add(forwardVector));
 		ghostAvatars.add(newAvatar);
 		//game.initializeAvatarPhysics(newAvatar, 10f);
 		System.out.println("added ghost");

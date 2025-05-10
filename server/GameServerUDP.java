@@ -81,7 +81,8 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 			{	UUID clientID = UUID.fromString(messageTokens[1]);
 				String[] pos = {messageTokens[2], messageTokens[3], messageTokens[4]};
 				String character = messageTokens[5];
-				sendCreateMessages(clientID, character, pos);
+				String[] forward = {messageTokens[6], messageTokens[7], messageTokens[8]};
+				sendCreateMessages(clientID, character, pos, forward);
 				sendWantsDetailsMessages(clientID);
 
 				if (character.equals("tageman")) {
@@ -286,13 +287,16 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 	// connected to the server. 
 	// Message Format: (create,remoteId,x,y,z) where x, y, and z represent the position
 
-	public void sendCreateMessages(UUID clientID, String character, String[] position)
+	public void sendCreateMessages(UUID clientID, String character, String[] position, String[] forward)
 	{	try 
 		{	String message = new String("create," + clientID.toString());
 			message += "," + position[0];
 			message += "," + position[1];
 			message += "," + position[2];
 			message += "," + character;
+			message += "," + forward[0];
+			message += "," + forward[1];
+			message += "," + forward[2];
 			forwardPacketToAll(message, clientID);
 		} 
 		catch (IOException e) 
