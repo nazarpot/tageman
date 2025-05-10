@@ -72,7 +72,8 @@ public class MyGame extends VariableFrameRateGame
 	private TextureImage npcTex;
 
 	private IAudioManager audioMgr;
-	private Sound hereSound, oceanSound;
+	private Sound startSound, bgSound, chompSound;
+	private AudioResource startResource, backgroundResource, chompResource;
 
 	private String serverAddress;
 	private int serverPort;
@@ -80,12 +81,13 @@ public class MyGame extends VariableFrameRateGame
 	private ProtocolClient protClient;
 	private boolean isClientConnected = false, alreadyMoving = false, isMovingForward = false, isMovingBackward = false;
 	private boolean isGameOngoing = false, isGateOpen = false, pelletsInitialized=false;
-	private boolean gameStarted = false;
+	private boolean gameStarted = false, bgSoundStarted=false;
 
 	private int mapWidth, mapHeight;
 
 	private String dispStr2 = new String("choose character");
 	private Vector3f hud2Color = new Vector3f(0, 1, 0);
+	private Vector3f pelletLoc;
 
 	private boolean poweredUp = false;
 	private double powerTime;
@@ -145,15 +147,20 @@ public class MyGame extends VariableFrameRateGame
 	}
 
 	@Override
-	public void loadSounds(){ 
-		AudioResource resource1, resource2;
+	public void loadSounds(){
 		audioMgr = engine.getAudioManager();
-		resource1 = audioMgr.createAudioResource("start.wav", AudioResourceType.AUDIO_SAMPLE);
-		hereSound = new Sound(resource1, SoundType.SOUND_EFFECT, 10, false);
-		hereSound.initialize(audioMgr);
-		hereSound.setMaxDistance(10.0f);
-		hereSound.setMinDistance(0.5f);
-		hereSound.setRollOff(5.0f);
+		startResource = audioMgr.createAudioResource("start.wav", AudioResourceType.AUDIO_SAMPLE);
+		backgroundResource = audioMgr.createAudioResource("background.wav", AudioResourceType.AUDIO_STREAM);
+		chompResource = audioMgr.createAudioResource("chomp.wav", AudioResourceType.AUDIO_SAMPLE);
+		startSound = new Sound(startResource, SoundType.SOUND_MUSIC, 10, false);
+		bgSound = new Sound(backgroundResource, SoundType.SOUND_MUSIC, 10, true);
+		chompSound = new Sound(chompResource, SoundType.SOUND_EFFECT, 20, false);
+		startSound.initialize(audioMgr);
+		bgSound.initialize(audioMgr);
+		chompSound.initialize(audioMgr);
+		chompSound.setRollOff(1.0f);
+		chompSound.setMinDistance(2.0f);
+		chompSound.setMaxDistance(10.0f);
 	}
 
 	@Override
@@ -237,9 +244,10 @@ public class MyGame extends VariableFrameRateGame
 		(engine.getRenderSystem()).setWindowDimensions(1900, 1000);
 
 		// initial sound settings
-		hereSound.setLocation(tageman.getWorldLocation());
+		//startSound.setLocation(tageman.getWorldLocation());
 		setEarParameters();
-		hereSound.play();
+		startSound.play();
+		bgSound.play();
 
 		// --- initialize physics system ---
 		float[] gravity = {0f, -5f, 0f};
@@ -259,9 +267,9 @@ public class MyGame extends VariableFrameRateGame
 
 		//initializeAvatarPhysics(blinky, 10f);
 
-		//initilializeWallPhysics();
+		initilializeWallPhysics();
 
-		initializePelletz();
+		initializePellets();
 
 		// ------------- camera setup -------------
 		(engine.getRenderSystem().getViewport("MAIN").getCamera()).setLocation(new Vector3f(0, 0, 5));
@@ -307,6 +315,12 @@ public class MyGame extends VariableFrameRateGame
 			respawnGhost();
 		}
 
+		//if (!bgSoundStarted && elapsedTime >= 10.0) {
+		//	bgSound.play();
+		//	bgSoundStarted = true;
+		//}
+
+
 		// build and set HUD
 		int elapsedTimeSec = Math.round((float)elapsedTime);
 		String elapsedTimeStr = Integer.toString(elapsedTimeSec);
@@ -328,7 +342,7 @@ public class MyGame extends VariableFrameRateGame
 		tageS.updateAnimation();
 
 		// update sound
-		hereSound.setLocation(tageman.getWorldLocation());
+		//hereSound.setLocation(tageman.getWorldLocation());
 		setEarParameters();
 		
 		if (joined) {
@@ -477,7 +491,7 @@ public class MyGame extends VariableFrameRateGame
 		setUpGame();
 	}
 
-	public void initializePelletz(){
+	public void initializePellets(){
 		pelletRow(-44f, 44f, 44.5f, 8.75f);//(x, x , fixed z)
 		pelletRow(-44f, -5.25f, -44.5f, 8.0f);
 		pelletRow(5.25f, 44f, -44.5f, 8.0f);
@@ -947,7 +961,11 @@ public class MyGame extends VariableFrameRateGame
 							physicsEngine.removeObject(pelletUID);
 							numPellets--;
 							System.out.printf("Pellets remaining %d%n", numPellets);
-							
+
+							pelletLoc = normalPellet.getWorldLocation();
+							chompSound.setLocation(pelletLoc);
+							chompSound.play();
+
 							if (numPellets == 0) {
 								System.out.println("All pellets eaten!");
 							}
