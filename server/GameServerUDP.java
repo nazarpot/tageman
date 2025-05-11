@@ -406,7 +406,7 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 		int lives = Integer.parseInt(l);
 
 		if (lives < 0) {
-			sendVictoryMessage(clientID, 1);
+			sendVictoryMessage(1);
 		} else {
 			try {
 				String message = new String("caught," + clientID.toString());
@@ -420,12 +420,11 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 		}
 	}
 
-	public void sendVictoryMessage(UUID clientID, int who) {
+	public void sendVictoryMessage(int who) {
 		try {
-			String message = new String("victory," + clientID.toString());
+			String message = new String("victory," );
 			message += "," + who;
-			forwardPacketToAll(message, clientID);
-			sendPacket(message, clientID);
+			sendPacketToAll(message);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -507,8 +506,12 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 
 	public void sendPelletCountMessage(String count) {
 		try {
-			String message = "pelletCount," + count;
-			sendPacketToAll(message);
+			if (count == "0") {
+				sendVictoryMessage(0);
+			} else {
+				String message = "pelletCount," + count;
+				sendPacketToAll(message);
+			}
 		} catch (IOException e) {
 			System.out.println("Failed to send pellet count update");
 			e.printStackTrace();

@@ -172,8 +172,7 @@ public class ProtocolClient extends GameConnectionClient
 			// 0 - tageman won
 			// 1 - ghosts win
 			if (messageTokens[0].compareTo("victory") == 0) {
-				UUID ghostID = UUID.fromString(messageTokens[1]);
-				int who = Integer.parseInt(messageTokens[2]);
+				int who = Integer.parseInt(messageTokens[1]);
 				game.victory(who);
 			}
 
