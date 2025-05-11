@@ -36,7 +36,7 @@ public class TurnAction extends AbstractInputAction {
             float keyValue = e.getValue();
             if (keyValue > -0.2 && keyValue <0.2) return; //deadzone
         
-            avatar.yaw(keyValue);
+            avatar.yaw(-keyValue);
         } else {
             avatar.yaw(3.0f * direction);
         }
