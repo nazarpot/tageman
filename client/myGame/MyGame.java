@@ -65,15 +65,15 @@ public class MyGame extends VariableFrameRateGame
 	private PhysicsObject wall1, wall2, wall3, wall4, wall5, wall6, wall7, wall8, wall9, wall10;
 	private PhysicsObject wall11, wall12, wall13, wall14, wall15, wall16, wall17, wall18, wall19;
 	private PhysicsObject wall20, wall21, wall22, wall23, wall24, wall25, wall26, wall27, wall28;
-	private PhysicsObject wall29, wall30, wall31, wall32, wall33, wall34, wall35, wall36, wall37, wall38, wall39, wall40, wall41, wall42, gate;
+	private PhysicsObject wall29, wall30, wall31, wall32, wall33, wall34, wall35, wall36, wall37, wall38, wall39, wall40, wall41, wall42, wall43, gate;
 	private float vals[] = new float[16];
 
 	private ObjShape npcShape;
 	private TextureImage npcTex;
 
 	private IAudioManager audioMgr;
-	private Sound startSound, bgSound, chompSound;
-	private AudioResource startResource, backgroundResource, chompResource;
+	private Sound startSound, bgSound, chompSound, whirlSound;
+	private AudioResource startResource, backgroundResource, chompResource, whirlResource;
 
 	private String serverAddress;
 	private int serverPort;
@@ -81,7 +81,7 @@ public class MyGame extends VariableFrameRateGame
 	private ProtocolClient protClient;
 	private boolean isClientConnected = false, alreadyMoving = false, isMovingForward = false, isMovingBackward = false;
 	private boolean isGameOngoing = false, isGateOpen = false, pelletsInitialized=false;
-	private boolean gameStarted = false, bgSoundStarted=false;
+	private boolean gameStarted = false, bgSoundStarted=false, isWhirlPlaying = false;
 
 	private int mapWidth, mapHeight;
 
@@ -93,6 +93,7 @@ public class MyGame extends VariableFrameRateGame
 	private double powerTime;
 
 	private double prevCountdown, countdown;
+	private float radiusOffset;
 
 	private int remainingLives = 5;
 	private int remainingPellets;
@@ -152,15 +153,21 @@ public class MyGame extends VariableFrameRateGame
 		startResource = audioMgr.createAudioResource("start.wav", AudioResourceType.AUDIO_SAMPLE);
 		backgroundResource = audioMgr.createAudioResource("background.wav", AudioResourceType.AUDIO_STREAM);
 		chompResource = audioMgr.createAudioResource("chomp.wav", AudioResourceType.AUDIO_SAMPLE);
+		whirlResource = audioMgr.createAudioResource("whirl.wav", AudioResourceType.AUDIO_SAMPLE);
 		startSound = new Sound(startResource, SoundType.SOUND_MUSIC, 10, false);
 		bgSound = new Sound(backgroundResource, SoundType.SOUND_MUSIC, 10, true);
 		chompSound = new Sound(chompResource, SoundType.SOUND_EFFECT, 20, false);
+		whirlSound = new Sound(whirlResource, SoundType.SOUND_EFFECT, 30, true);
 		startSound.initialize(audioMgr);
 		bgSound.initialize(audioMgr);
 		chompSound.initialize(audioMgr);
+		whirlSound.initialize(audioMgr);
 		chompSound.setRollOff(1.0f);
 		chompSound.setMinDistance(2.0f);
 		chompSound.setMaxDistance(10.0f);
+		whirlSound.setRollOff(1.0f);
+		whirlSound.setMinDistance(2.0f);
+		whirlSound.setMaxDistance(10.0f);
 	}
 
 	@Override
@@ -180,19 +187,19 @@ public class MyGame extends VariableFrameRateGame
 		avatarSelection.add(blinky);
 
 		pinky = new GameObject(GameObject.root(), pacmanGhostS, pinkyT);
-		initialScale = (new Matrix4f()).scaling(0.5f);
+		initialScale = (new Matrix4f()).scaling(0.4f);
 		pinky.setLocalScale(initialScale);
 		pinky.getRenderStates().disableRendering();
 		avatarSelection.add(pinky);
 
 		inky = new GameObject(GameObject.root(), pacmanGhostS, inkyT);
-		initialScale = (new Matrix4f()).scaling(0.5f);
+		initialScale = (new Matrix4f()).scaling(0.4f);
 		inky.setLocalScale(initialScale);
 		inky.getRenderStates().disableRendering();
 		avatarSelection.add(inky);
 
 		clyde = new GameObject(GameObject.root(), pacmanGhostS, clydeT);
-		initialScale = (new Matrix4f()).scaling(0.5f);
+		initialScale = (new Matrix4f()).scaling(0.4f);
 		clyde.setLocalScale(initialScale);
 		clyde.getRenderStates().disableRendering();
 		avatarSelection.add(clyde);
@@ -259,8 +266,6 @@ public class MyGame extends VariableFrameRateGame
 		terrainP = (engine.getSceneGraph()).addPhysicsStaticPlane(tempTransform, upVector, planeConstant);
 		terrain.setPhysicsObject(terrainP);
 
-		//initializeAvatarPhysics(blinky, 10f);
-
 		initilializeWallPhysics();
 
 		// ------------- camera setup -------------
@@ -307,12 +312,6 @@ public class MyGame extends VariableFrameRateGame
 			respawnGhost();
 		}
 
-		//if (!bgSoundStarted && elapsedTime >= 10.0) {
-		//	bgSound.play();
-		//	bgSoundStarted = true;
-		//}
-
-
 		// build and set HUD
 		int elapsedTimeSec = Math.round((float)elapsedTime);
 		String elapsedTimeStr = Integer.toString(elapsedTimeSec);
@@ -330,78 +329,102 @@ public class MyGame extends VariableFrameRateGame
 
 		Vector3f avatarLoc = avatar.getWorldLocation();
 		light1.setLocation(avatarLoc.add(0.0f, 1.0f, 0.0f));
-
+		
 		tageS.updateAnimation();
 
 		// update sound
 		//hereSound.setLocation(tageman.getWorldLocation());
 		setEarParameters();
+
+		if (characterName != null && characterName != "tageman") {
+			whirlSound.setLocation(avatar.getWorldLocation());
+		}
+
 		
 		if (joined) {
-			float radiusOffset = 0.5f;
+			float wallThreshold = 1.5f;
 			float stepSize = 0.05f;
 			float moveSpeed = 2f;
 
+			if (characterName == "tageman") {
+				radiusOffset = .5f;
+			}
+			else {
+				radiusOffset = .75f;
+			}
 			if (isMovingForward || isMovingBackward) {
 				Vector4f moveDirection = isMovingForward ?
-					new Vector4f(0f, 0f, 1f, 0f) :
-					new Vector4f(0f, 0f, -1f, 0f);
-		
+				new Vector4f(0f, 0f, 1f, 0f) :
+				new Vector4f(0f, 0f, -1f, 0f);
+
 				moveDirection.mul(avatar.getWorldRotation());
-		
+
 				Vector3f currPos = avatar.getWorldLocation();
 				Vector3f nextPos = new Vector3f(
 					currPos.x() + moveDirection.x() * stepSize,
-					currPos.y(),
+					0,
 					currPos.z() + moveDirection.z() * stepSize
 				);
-		
-				Matrix4f newTransform = new Matrix4f().translation(
-					nextPos.x(), currPos.y(), nextPos.z()
-				);
-		
-				avatar.getPhysicsObject().setTransform(toDoubleArray(newTransform.get(vals)));
-				avatar.getPhysicsObject().setLinearVelocity(new float[] {
-					moveDirection.x() * moveSpeed,
-					0f,
-					moveDirection.z() * moveSpeed
-				});
-				
-				if (protClient != null) {
-					protClient.sendMoveMessage(avatar.getWorldLocation(), 0.0f);
-				}
-			} else {
-				avatar.getPhysicsObject().setLinearVelocity(new float[] { 0f, 0f, 0f });
-			}
-		
-			// Physics and visual sync
-			AxisAngle4f aa = new AxisAngle4f();
-			Matrix4f mat = new Matrix4f();
-			Matrix4f mat2 = new Matrix4f().identity();
-			Matrix4f mat3 = new Matrix4f().identity();
-		
-			checkForCollisions();
-			physicsEngine.update((float)elapsedTime);
-		
-			for (GameObject go : engine.getSceneGraph().getGameObjects()) {
-				if (go.getPhysicsObject() != null) {
-					// Get transform from physics
-					mat.set(toFloatArray(go.getPhysicsObject().getTransform()));
-		
-					// Set translation visually
-					mat2.set(3, 0, mat.m30());
-					mat2.set(3, 1, mat.m31());
-					mat2.set(3, 2, mat.m32());
-					go.setLocalTranslation(mat2);
-		
-					// Set rotation if not player avatar
-					if (go != avatar) {
-						mat.getRotation(aa);
-						mat3.rotation(aa);
-						go.setLocalRotation(mat3);
+				if (characterName != "tageman") {
+					if (!isWhirlPlaying) {
+						whirlSound.play();
+						isWhirlPlaying = true;
 					}
 				}
-			}
+				float nextHeight = terrain.getHeight(nextPos.x(), nextPos.z());
+
+				if (nextHeight < wallThreshold) {
+					Matrix4f newTransform = new Matrix4f().translation(
+						nextPos.x(), nextHeight + radiusOffset, nextPos.z()
+					);
+
+					avatar.getPhysicsObject().setTransform(toDoubleArray(newTransform.get(vals)));
+					avatar.getPhysicsObject().setLinearVelocity(new float[] {
+						moveDirection.x() * moveSpeed, 0f, moveDirection.z() * moveSpeed });
+
+						if (protClient != null) {
+							protClient.sendMoveMessage(avatar.getWorldLocation(), 0.0f);
+						}
+					} else {
+						avatar.getPhysicsObject().setLinearVelocity(new float[] { 0f, 0f, 0f });
+					}
+				} else {
+					avatar.getPhysicsObject().setLinearVelocity(new float[] { 0f, 0f, 0f });
+					if (isWhirlPlaying) {
+						whirlSound.stop();
+						isWhirlPlaying = false;
+					}
+				}
+
+		
+				// Physics and visual sync
+				AxisAngle4f aa = new AxisAngle4f();
+				Matrix4f mat = new Matrix4f();
+				Matrix4f mat2 = new Matrix4f().identity();
+				Matrix4f mat3 = new Matrix4f().identity();
+		
+				checkForCollisions();
+				physicsEngine.update((float)elapsedTime);
+		
+				for (GameObject go : engine.getSceneGraph().getGameObjects()) {
+					if (go.getPhysicsObject() != null) {
+						// Get transform from physics
+						mat.set(toFloatArray(go.getPhysicsObject().getTransform()));
+		
+						// Set translation visually
+						mat2.set(3, 0, mat.m30());
+						mat2.set(3, 1, mat.m31());
+						mat2.set(3, 2, mat.m32());
+						go.setLocalTranslation(mat2);
+		
+						// Set rotation if not player avatar
+						if (go != avatar) {
+							mat.getRotation(aa);
+							mat3.rotation(aa);
+							go.setLocalRotation(mat3);
+						}
+					}
+				}
 		}
 	}
 		
@@ -478,9 +501,12 @@ public class MyGame extends VariableFrameRateGame
 
 	private void joinGame(String character) {
 		setupNetworking(character);
-
-		avatar.setLocalTranslation(new Matrix4f().translation(0f, .5f, -5f));
-
+		if (character.equals("tageman")) {
+			avatar.setLocalTranslation(new Matrix4f().translation(0f, .5f, -5f));
+		}
+		else {
+			avatar.setLocalTranslation(new Matrix4f().translation(0f, .75f, -5f));
+		}
 		setUpGame();
 	}
 
@@ -599,7 +625,7 @@ public class MyGame extends VariableFrameRateGame
 
 	public void confirmJoin() {
 		joined = true;
-		avatar.setLocalTranslation((new Matrix4f()).translation(0, 1, -5));
+		avatar.setLocalTranslation((new Matrix4f()).translation(0, .75f, -5));
 		ghostS = avatar.getShape();
 		ghostT = avatar.getTextureImage();
 
@@ -621,10 +647,8 @@ public class MyGame extends VariableFrameRateGame
 				gameStarted = true;
 				protClient.sendStartGame(0);
 
-				//avatar.setLocalTranslation((new Matrix4f()).translation(0, 1, 25));
-
 				physicsEngine.removeObject(avatar.getPhysicsObject().getUID());
-				avatar.setLocalTranslation((new Matrix4f()).translation(0, 1, 25));
+				avatar.setLocalTranslation((new Matrix4f()).translation(0, .75f, 25));
 				initializeAvatarPhysics(avatar, 10f);
 
 				Vector3f position = new Vector3f(0.0f, 1.0f, 5.0f);
@@ -718,6 +742,7 @@ public class MyGame extends VariableFrameRateGame
 		float[] wall40S = {2f, 3.5f, 98f};
 		float[] wall41S = {25f, 3.5f, 34f};
 		float[] wall42S = {25f, 3.5f, 34f};
+		float[] wall43S = {9f, .375f, 1.5f};
 		float[] gateS = {9f, 3.5f, 1.5f};
 		Matrix4f wall1T = new Matrix4f().translation(0f, 2f, 3.25f);//position
 		Matrix4f wall2T = new Matrix4f().translation(12.5f, 2f, -3f);
@@ -761,6 +786,7 @@ public class MyGame extends VariableFrameRateGame
 		Matrix4f wall40T = new Matrix4f().translation(48.25f, 2f, 0f);
 		Matrix4f wall41T = new Matrix4f().translation(-41.875f, 2f, -3.25f);
 		Matrix4f wall42T = new Matrix4f().translation(41.875f, 2f, -3.25f);
+		Matrix4f wall43T = new Matrix4f().translation(0f, .125f, -9.75f);
 		Matrix4f gateT = new Matrix4f().translation(0f, 2f, -9.75f);
 		double[] transformArray = toDoubleArray(wall1T.get(vals));
 		wall1 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall1S);
@@ -846,6 +872,8 @@ public class MyGame extends VariableFrameRateGame
 		wall41 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall41S);
 		transformArray = toDoubleArray(wall42T.get(vals));
 		wall42 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall42S);
+		transformArray = toDoubleArray(wall43T.get(vals));
+		wall43 = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, wall43S);
 		transformArray = toDoubleArray(gateT.get(vals));
 		gate = (engine.getSceneGraph()).addPhysicsBox(0f, transformArray, gateS);
 	}
@@ -1012,10 +1040,11 @@ public class MyGame extends VariableFrameRateGame
     	//Adjust shape if it's a ghost
 		if (character.getShape() == pacmanGhostS) {
 			radius = 0.4f;
-			height = 0.2f;
+			height = .75f;
 		}
 
 		Matrix4f translation = new Matrix4f(character.getLocalTranslation());
+		translation.translate(0, 0.25f, 0);
 		double[] tempTransform = toDoubleArray(translation.get(vals));
 		PhysicsObject po = engine.getSceneGraph().addPhysicsCapsule(mass, tempTransform, radius, height);
 		po.setBounciness(0.8f);
@@ -1126,7 +1155,7 @@ public class MyGame extends VariableFrameRateGame
 
 		if (characterName == "tageman") {
 			physicsEngine.removeObject(avatar.getPhysicsObject().getUID());
-			avatar.setLocalTranslation((new Matrix4f()).translation(0, 1, 25));
+			avatar.setLocalTranslation((new Matrix4f()).translation(0, .5f, 25));
 			initializeAvatarPhysics(avatar, 10f);
 		} else {
 			eaten();
