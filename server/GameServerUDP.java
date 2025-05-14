@@ -422,7 +422,7 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 
 	public void sendVictoryMessage(int who) {
 		try {
-			String message = new String("victory," );
+			String message = new String("victory");
 			message += "," + who;
 			sendPacketToAll(message);
 		} catch (IOException e) {
@@ -506,7 +506,7 @@ public class GameServerUDP extends GameConnectionServer<UUID>
 
 	public void sendPelletCountMessage(String count) {
 		try {
-			if (count == "0") {
+			if (count.equals("0")) {
 				sendVictoryMessage(0);
 			} else {
 				String message = "pelletCount," + count;

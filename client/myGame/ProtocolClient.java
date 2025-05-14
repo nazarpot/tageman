@@ -20,6 +20,7 @@ public class ProtocolClient extends GameConnectionClient
 	private GhostManager ghostManager;
 	private UUID id;
 	private GhostNPC ghostNPC;
+	private TextureImage scaredGhostT = new TextureImage("scared.png");
 	
 	public ProtocolClient(InetAddress remoteAddr, int remotePort, ProtocolType protocolType, MyGame game) throws IOException 
 	{	super(remoteAddr, remotePort, protocolType);
@@ -150,7 +151,7 @@ public class ProtocolClient extends GameConnectionClient
 				Boolean powerup = Boolean.parseBoolean(messageTokens[2]);
 				game.setPowerup(ghostID, powerup);
 				if (powerup) {
-					ghostNPC.setTextureImage(game.getScaredTexture());
+					ghostNPC.setTextureImage(scaredGhostT);
 				} else {
 					ghostNPC.setTextureImage(game.getNPCtexture());
 				}

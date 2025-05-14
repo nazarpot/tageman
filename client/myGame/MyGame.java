@@ -336,7 +336,7 @@ public class MyGame extends VariableFrameRateGame
 		//hereSound.setLocation(tageman.getWorldLocation());
 		setEarParameters();
 
-		if (characterName != null && characterName != "tageman") {
+		if (characterName != null && !characterName.equals("tageman")) {
 			whirlSound.setLocation(avatar.getWorldLocation());
 		}
 
@@ -346,7 +346,7 @@ public class MyGame extends VariableFrameRateGame
 			float stepSize = 0.05f;
 			float moveSpeed = 2f;
 
-			if (characterName == "tageman") {
+			if (characterName.equals("tageman")) {
 				radiusOffset = .5f;
 			}
 			else {
@@ -597,7 +597,7 @@ public class MyGame extends VariableFrameRateGame
 											turnRightAction, 
 											InputManager.INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
 	
-		if (characterName == "tageman") {
+		if (characterName.equals("tageman")) {
 			//create power pellets
 			for (int i = -1; i < 2; i = i + 2) {
 				for (int j = -1; j < 2; j = j + 2) {
@@ -634,7 +634,7 @@ public class MyGame extends VariableFrameRateGame
 
 	public void startGame() {
 		System.out.println("starting game");
-		if (characterName == "tageman") {
+		if (characterName.equals("tageman")) {
 			countdownToStart();
 		}
 
@@ -646,6 +646,7 @@ public class MyGame extends VariableFrameRateGame
 			if (countdown <= 0 && !gameStarted) {
 				gameStarted = true;
 				protClient.sendStartGame(0);
+				dispStr2 = "";
 
 				physicsEngine.removeObject(avatar.getPhysicsObject().getUID());
 				avatar.setLocalTranslation((new Matrix4f()).translation(0, .75f, 25));
@@ -676,13 +677,14 @@ public class MyGame extends VariableFrameRateGame
 			gameStarted = true;
 			inPlay = true;
 			caught = false;
+			dispStr2 = "";
 			openGate();
 		}
 	}
 
 	public void setTagemanChomp(boolean moving) {
 		if (moving && !alreadyMoving) {
-			tageS.playAnimation("Action.027", 0.25f, AnimatedShape.EndType.LOOP, 0);
+			tageS.playAnimation("Action.027", 0.75f, AnimatedShape.EndType.LOOP, 0);
 		} else if (!moving && alreadyMoving) {
 			tageS.stopAnimation();
 		}
@@ -1070,6 +1072,7 @@ public class MyGame extends VariableFrameRateGame
 			if (powerTime < 0) {
 				Matrix4f scale = (new Matrix4f().scaling(0.5f));
 				avatar.setLocalScale(scale);
+				orbitController.powerUp(false);
 				if (protClient != null) {
 					protClient.sendPowerMessage(false);
 				}
@@ -1077,7 +1080,7 @@ public class MyGame extends VariableFrameRateGame
 				int num = gm.getGhostsNum();
 				for (int i = 0; i < num; i++) {
 					GhostAvatar go = (GhostAvatar) gm.getAvatar(i);
-					if (go.getName() != "tageman") {
+					if (go.getName().compareTo("tageman") == 0) {
 						go.setTextureImage(getGhostTexture(go.getName()));
 					}
 				}
@@ -1092,6 +1095,7 @@ public class MyGame extends VariableFrameRateGame
 				powerTime = 20000;
 				Matrix4f scale = (new Matrix4f()).scaling(2.0f);
 				avatar.setLocalScale(scale);
+				orbitController.powerUp(true);
 				if (protClient != null) {
 					protClient.sendPowerMessage(true);
 				}
@@ -1099,7 +1103,7 @@ public class MyGame extends VariableFrameRateGame
 				int num = gm.getGhostsNum();
 				for (int i = 0; i < num; i++) {
 					GhostAvatar go = (GhostAvatar) gm.getAvatar(i);
-					if (go.getName() != "tageman") {
+					if (go.getName().compareTo("tageman") == 0) {
 						go.setTextureImage(scaredGhostT);
 					}
 				}

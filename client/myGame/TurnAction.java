@@ -38,10 +38,10 @@ public class TurnAction extends AbstractInputAction {
         
             avatar.yaw(-keyValue);
         } else {
-            avatar.yaw(3.0f * direction);
+            avatar.yaw(5.0f * direction);
         }
         if (protClient != null) {
-            protClient.sendMoveMessage(avatar.getWorldLocation(), direction);
+            protClient.sendMoveMessage(avatar.getWorldLocation(), 1.66f * direction);
         }
     }
 }

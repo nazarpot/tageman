@@ -20,6 +20,8 @@ public class CameraOrbitController {
     private float cameraElevation;
     private float cameraRadius;
 
+    private boolean poweredUp = false;
+
     public CameraOrbitController(Camera cam, GameObject av, String gpName, String kbName, Engine e) {
         engine = e;
         camera = cam;
@@ -90,6 +92,12 @@ public class CameraOrbitController {
         cameraAzimuth = 0;
         cameraElevation = 15;
         cameraRadius = 2.75f;
+
+        if (poweredUp) {
+            cameraAzimuth = 0;
+            cameraElevation = 15;
+            cameraRadius = 5f;
+        }
         camera.lookAt(avatar);
     }
 
@@ -195,4 +203,6 @@ public class CameraOrbitController {
             }
         }
     }
+
+    public void powerUp(boolean b) {poweredUp = b;}
 }
